@@ -3,8 +3,14 @@
 Runs a package's shell checks and reports each as passed, failed or skipped.
 
 ```sh
-check-runner tests/*.sh
+check-runner [--jobs N] tests/*.sh
 ```
+
+- Checks run one at a time by default, since they may share fixed paths such
+  as sockets.
+- `--jobs N` runs up to N at once. A check with a `# check-runner: alone` line
+  runs by itself after the rest; mark one that changes files other checks read.
+- Verdicts print in the order the checks were given.
 
 A package hooks its checks into turbo with a `test:shell` script, which the
 root `test` task runs:
@@ -35,7 +41,7 @@ A run that checked nothing fails.
 
 | Path | What it is |
 |---|---|
-| `bin/check-runner.sh` | Runs its arguments one at a time. |
+| `bin/check-runner.sh` | Runs its arguments, one at a time or `--jobs N` at once. |
 | `src/report.sh` | The verdicts and tally, sourced by runners that order their own checks (the engine's `run-checks.sh`). |
 | `src/skips.ts` | Scans every check's `exit 77` for a `SKIP:` line, covering skips a run never reaches. |
 

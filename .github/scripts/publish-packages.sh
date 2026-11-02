@@ -36,6 +36,13 @@ done
 cp bun.lock "$SAVED/bun.lock"
 trap restore EXIT
 
+# What the tarballs hold that git does not: each library's `dist/` and the
+# Panda `styled-system/` the component library and manganese's packages
+# import. Manganese depends on every other package published here. Built
+# before the versions are stamped, which the builds do not read, so the
+# packages/ci check that runs this finds them in turbo's cache.
+bun run turbo run build:publish --filter @domicile-desktop/manganese
+
 MANIFESTS=()
 for package in "${PACKAGES[@]}"; do
   MANIFESTS+=("packages/$package/package.json")
@@ -48,11 +55,6 @@ else
   VERSION="$(packages/distro/stamp-version.sh "$(git rev-parse HEAD)" "${MANIFESTS[@]}")"
   bun install --ignore-scripts
 fi
-
-# What the tarballs hold that git does not: each library's `dist/` and the
-# Panda `styled-system/` the component library and manganese's packages
-# import. Manganese depends on every other package published here.
-bun run turbo run prepare build --filter "@domicile-desktop/manganese..."
 
 for package in "${PACKAGES[@]}"; do
   (cd "packages/$package" && bun pm pack --quiet --ignore-scripts --destination "$OUT")

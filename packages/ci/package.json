@@ -11,7 +11,7 @@
   "name": "@domicile-desktop/ci",
   "private": true,
   "scripts": {
-    "test:shell": "check-runner tests/*.sh"
+    "test:shell": "check-runner --jobs 4 tests/*.sh"
   },
   "type": "module",
   "version": "0.0.1"
