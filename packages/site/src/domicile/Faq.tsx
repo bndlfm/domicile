@@ -3,6 +3,9 @@ import { flex } from "../../styled-system/patterns";
 import { Backticked } from "../page/Backticked";
 import { repoFile } from "../page/repo";
 import { Section } from "../page/Section";
+import { engineChromium } from "./chromium";
+
+const CHROMIUM = engineChromium();
 
 /** What people ask before they trust a desktop, each with where to read more. */
 const QUESTIONS: readonly {
@@ -34,13 +37,14 @@ const QUESTIONS: readonly {
     question: "What happens if the desktop crashes or reloads?",
   },
   {
-    answer:
-      "The engine is a patch series on a pinned Chromium release, built and tested in Domicile's CI.",
+    answer: `The engine is Chromium ${CHROMIUM.version} (\`main\` at \`${CHROMIUM.revision.slice(0, 10)}\`) with Domicile's patches. Moving to a newer Chromium is a pull request that CI builds and tests, and it reaches you with the next Domicile release, through your package manager or a flake update. There is no fixed schedule, and no promise on how fast a Chromium security fix ships.`,
     link: {
-      href: repoFile("docs/architecture/ENGINE-FORK.md"),
-      label: "The engine fork",
+      href: repoFile(
+        "packages/domicile-engine/docs/RELEASES.md#which-chromium-ships",
+      ),
+      label: "Chromium updates",
     },
-    question: "How is the Chromium fork kept up to date?",
+    question: "Which Chromium is it, and how does it get updates?",
   },
   {
     answer:

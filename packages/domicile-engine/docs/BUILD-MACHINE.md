@@ -54,7 +54,9 @@ git -C /build/chromium/src config user.email "..."
 
 ## Moving the pin
 
-1. Edit `CHROMIUM_PIN`.
+1. Edit `CHROMIUM_PIN`, and write the revision's version (its
+   `chrome/VERSION`, joined with dots) to `CHROMIUM_VERSION`.
+   `test-the-chromium-version-is-the-pins.sh` checks the two agree.
 2. Open a PR. The engine job reports which patches reject.
 3. Fix each reject in the checkout, then run `extract.sh`.
 4. Copy any new file into `src/`.
