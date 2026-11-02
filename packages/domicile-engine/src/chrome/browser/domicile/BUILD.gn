@@ -31,6 +31,8 @@ source_set("domicile") {
     "domicile_desk_functions.h",
     "domicile_devtools.cc",
     "domicile_devtools.h",
+    "domicile_downloads.cc",
+    "domicile_downloads.h",
     "domicile_extension_installer.cc",
     "domicile_extension_installer.h",
     "domicile_extension_tray.cc",
@@ -78,6 +80,8 @@ source_set("domicile") {
     "//components/domicile:common",
     # Somebody at the desk, from ui::UserActivityDetector in //ui/base.
     "//components/domicile:desk_activity",
+    # The desk's downloads, for the shell's Downloads pipe.
+    "//components/domicile:desk_downloads",
     # Where the pointer is on the desk, from aura's own events.
     "//components/domicile:desk_pointer",
     "//components/domicile:pointer_warp",

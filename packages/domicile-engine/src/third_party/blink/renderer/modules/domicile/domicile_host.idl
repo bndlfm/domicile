@@ -381,6 +381,30 @@
   [CallWith=ScriptState, RaisesException] undefined stopCasting(
       DOMString route);
 
+  // The desk's downloads, oldest first: each one a browser window's page
+  // started while the browser runs, until removeDownload() or
+  // clearDownloads(). Null until the browser lists them, which it does as soon
+  // as this page listens. No [SameObject], for `displays`' reason. See
+  // components/domicile/mojom/downloads.mojom.
+  readonly attribute FrozenArray<DomicileDownload>? downloads;
+
+  // Fires when a download starts, progresses, finishes, fails, or leaves the
+  // list. Read `downloads` for the current list.
+  attribute EventHandler ondownloadschanged;
+
+  // Cancels download `id`; it leaves the next `downloadschanged`. An unknown
+  // id, or one no longer in progress, does nothing.
+  [CallWith=ScriptState, RaisesException] undefined cancelDownload(
+      DOMString id);
+
+  // Removes download `id` from `downloads`. The file stays. A download in
+  // progress, or an unknown id, does nothing.
+  [CallWith=ScriptState, RaisesException] undefined removeDownload(
+      DOMString id);
+
+  // Removes every download not in progress from `downloads`. The files stay.
+  [CallWith=ScriptState, RaisesException] undefined clearDownloads();
+
   // Sends `method`, "GET" or "POST", to `url` from the browser process with
   // the cookies of the profile the ordinary browser windows use, so a bar
   // item can read a site the user is signed in to. A POST sends `body`, as a

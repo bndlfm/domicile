@@ -39,16 +39,6 @@ export const WEBVIEW_LOAD_PROGRESS_CHANGE_EVENT =
   "domicile-load-progress-change";
 
 /**
- * Fired when {@link HTMLWebViewElement.downloadCount},
- * {@link HTMLWebViewElement.downloadReceivedBytes},
- * {@link HTMLWebViewElement.downloadTotalBytes} or
- * {@link HTMLWebViewElement.downloadCompletedCount} or
- * {@link HTMLWebViewElement.downloadCompletedPaths} changes. Carries no payload.
- * Bubbles.
- */
-export const WEBVIEW_DOWNLOADS_CHANGE_EVENT = "domicile-downloads-change";
-
-/**
  * Fired when {@link HTMLWebViewElement.url} or
  * {@link HTMLWebViewElement.security} changes. Carries no payload. Bubbles.
  *
@@ -505,37 +495,6 @@ declare global {
      * {@link WEBVIEW_LOAD_PROGRESS_CHANGE_EVENT}.
      */
     readonly loadProgress: number;
-    /**
-     * How many of the page's downloads are in progress. A download counts once
-     * the shell has said where it goes. Changes fire
-     * {@link WEBVIEW_DOWNLOADS_CHANGE_EVENT}.
-     */
-    readonly downloadCount: number;
-    /** Bytes received across the downloads in progress. */
-    readonly downloadReceivedBytes: number;
-    /**
-     * Bytes expected across the downloads in progress. `0` when any one's size
-     * is unknown.
-     */
-    readonly downloadTotalBytes: number;
-    /**
-     * How many of the page's downloads finished, until
-     * {@link HTMLWebViewElement.clearCompletedDownloads}. A canceled or
-     * interrupted download is not counted.
-     */
-    readonly downloadCompletedCount: number;
-    /**
-     * Where the finished downloads were saved, absolute, in the order they
-     * started. `undefined` from an engine without it.
-     */
-    readonly downloadCompletedPaths: readonly string[] | undefined;
-    /** Stops counting finished downloads in `downloadCompletedCount`. */
-    clearCompletedDownloads(): void;
-    /**
-     * Stops counting the finished downloads saved at `path`, an entry of
-     * `downloadCompletedPaths`. `undefined` from an engine without it.
-     */
-    readonly removeCompletedDownload: ((path: string) => void) | undefined;
     /**
      * The current address, as a browser's address bar shows it. Differs from
      * {@link HTMLWebViewElement.src} after links and redirects.

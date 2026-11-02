@@ -3,6 +3,7 @@
 import type { BarLayout } from "@domicile-desktop/manganese-bar/bar-layout";
 import { Cast } from "@domicile-desktop/manganese-bar-module-cast";
 import { Clock } from "@domicile-desktop/manganese-bar-module-clock";
+import { Downloads } from "@domicile-desktop/manganese-bar-module-downloads";
 import { KeptAwake } from "@domicile-desktop/manganese-bar-module-idle-inhibitor/kept-awake";
 import { Keymap } from "@domicile-desktop/manganese-bar-module-keymap";
 import { LauncherButton } from "@domicile-desktop/manganese-bar-module-launcher-button";
@@ -16,8 +17,8 @@ import { QuickSettings } from "@domicile-desktop/manganese-quick-settings";
  * Manganese's default bar.
  *
  * The launcher button is first, next to the tray. The sharing indicator leads
- * the right column, so it is seen, then the keep awake eye and casting to
- * TVs. The keymap, which shows only on a keyboard with several, is next, then
+ * the right column, so it is seen, then the keep awake eye, casting to TVs
+ * and downloads. The keymap, which shows only on a keyboard with several, is next, then
  * quick settings. The bell is last because the drawer it opens slides out from
  * that edge.
  */
@@ -32,6 +33,7 @@ export const DEFAULT_BAR: BarLayout = {
     <Sharing key="sharing" />,
     <KeptAwake key="kept-awake" />,
     <Cast key="cast" />,
+    <Downloads key="downloads" />,
     <Keymap key="keymap" />,
     <QuickSettings key="quick-settings" />,
     <Notifications key="notifications" />,
