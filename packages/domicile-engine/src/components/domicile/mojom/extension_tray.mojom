@@ -56,4 +56,9 @@ interface ExtensionTrayClient {
   // The full list on every change, not a delta, so a missed message cannot
   // leave the page wrong.
   ExtensionsChanged(array<TrayExtension> extensions);
+
+  // Extension `id` called `action.openPopup()`. The shell opens `popup` as it
+  // opens a clicked action's. `popup` is carried because the extension may
+  // set its action's popup back to none as soon as the call answers.
+  PopupRequested(string id, string popup);
 };

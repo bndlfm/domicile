@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -17,6 +18,7 @@
 #include "base/memory/scoped_refptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/memory/self_deleting.h"
+#include "base/no_destructor.h"
 #include "base/scoped_multi_source_observation.h"
 #include "base/scoped_observation.h"
 #include "chrome/browser/domicile/domicile_desk.h"
@@ -105,6 +107,14 @@ mojom::TrayExtensionPtr EntryFor(const Extension& extension,
       action.GetIsVisible(tab));
 }
 
+class ExtensionTray;
+
+// Every live tray, for RequestExtensionPopup. Trays live on the UI thread.
+std::set<ExtensionTray*>& Trays() {
+  static base::NoDestructor<std::set<ExtensionTray*>> trays;
+  return *trays;
+}
+
 // The tray for one shell document. A DocumentService, so a reloaded shell
 // binds a new one.
 //
@@ -134,6 +144,20 @@ class ExtensionTray final
     dispatcher_observation_.Observe(
         extensions::ExtensionActionDispatcher::Get(context_));
     observing_desk_ = AddDeskObserver(context_, this);
+    Trays().insert(this);
+  }
+
+  // Sends `popup` to this tray's client if it is `context`'s and has one.
+  // Returns whether it was sent.
+  bool RequestPopup(content::BrowserContext* context,
+                    const std::string& id,
+                    const GURL& popup) {
+    if (context != context_ || !client_.is_bound()) {
+      return false;
+    }
+    LOG(INFO) << "domicile: " << id << " asked the tray for its popup.";
+    client_->PopupRequested(id, popup.spec());
+    return true;
   }
 
  private:
@@ -161,6 +185,7 @@ class ExtensionTray final
   }
 
   ~ExtensionTray() override {
+    Trays().erase(this);
     if (observing_desk_) {
       RemoveDeskObserver(context_, this);
     }
@@ -344,6 +369,16 @@ void BindExtensionTray(content::RenderFrameHost* frame,
                        mojo::PendingReceiver<mojom::ExtensionTray> receiver) {
   // Self-owned; destroyed with the document.
   base::MakeSelfDeleting<ExtensionTray>(*frame, std::move(receiver));
+}
+
+bool RequestExtensionPopup(content::BrowserContext* context,
+                           const std::string& id,
+                           const GURL& popup) {
+  bool sent = false;
+  for (ExtensionTray* tray : Trays()) {
+    sent = tray->RequestPopup(context, id, popup) || sent;
+  }
+  return sent;
 }
 
 }  // namespace domicile

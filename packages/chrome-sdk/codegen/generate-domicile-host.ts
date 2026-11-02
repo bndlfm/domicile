@@ -34,6 +34,7 @@ const HEADER = [
 
 /** What each event is dispatched as, which `EventHandler` does not say. */
 const EVENT_TYPES = {
+  extensionpopuprequested: "DomicileExtensionPopupEvent",
   focusrequested: "DomicileAppEvent",
   portalrequests: "MessageEvent<string>",
   shortcut: "DomicileShortcutEvent",

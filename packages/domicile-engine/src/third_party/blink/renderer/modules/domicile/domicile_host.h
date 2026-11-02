@@ -345,6 +345,7 @@ class MODULES_EXPORT DomicileHost final
   // domicile::mojom::blink::ExtensionTrayClient:
   void ExtensionsChanged(
       Vector<domicile::mojom::blink::TrayExtensionPtr> extensions) override;
+  void PopupRequested(const String& id, const String& popup) override;
 
   // domicile::mojom::blink::BrowserWindowsClient:
   void WindowsChanged(

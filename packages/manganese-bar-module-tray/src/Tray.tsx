@@ -1,5 +1,8 @@
 import type { Domicile } from "@domicile-desktop/sdk/desktop/desktop";
-import type { Extension } from "@domicile-desktop/sdk/extension";
+import type {
+  Extension,
+  ExtensionPopup,
+} from "@domicile-desktop/sdk/extension";
 import type { TrayItem } from "@domicile-desktop/sdk/tray";
 import { useEffect, useRef, useState } from "react";
 
@@ -23,9 +26,9 @@ type Props = {
   /** Move `dragged` onto `target` among the `shown` keys; see `moveTo`. */
   onMove: (shown: readonly string[], dragged: string, target: string) => void;
   /** Open an extension's popup, or close the open one with `undefined`. */
-  onOpen: (id: string | undefined) => void;
-  /** The extension whose popup is open, or `undefined`. */
-  opened: string | undefined;
+  onOpen: (popup: ExtensionPopup | undefined) => void;
+  /** The open extension popup, or `undefined`. */
+  opened: ExtensionPopup | undefined;
   /** The user's icon order; see `useTrayOrder`. */
   order: readonly string[];
 };

@@ -146,6 +146,14 @@ interface DomicileExtension {
   `contentHeight` and `domicile-content-size-change`
   (`WebViewGuestClient.ContentSizeChanged`). The tray shows the panel once the
   page has loaded, as `ExtensionPopup` does.
+- **`action.openPopup()`** asks the shell for the popup, since the desk has
+  no toolbar. The desk's function replaces Chrome's
+  (`domicile_desk_functions.cc`) and checks as Chrome does: the desk's
+  window, not a popup window, and a popup on the active tab. It sends
+  `ExtensionTrayClient.PopupRequested(id, popup)` to every tray, which the
+  shell gets as `extensionpopuprequested`. It answers once the shell is
+  asked, not once the popup loads. The popup's URL is carried because
+  Phantom clears its popup as soon as the call answers.
 
 SDK side: the `DomicileHost` types in `packages/chrome-sdk`, and the tray
 and popup panel in `packages/manganese-bar-module-tray/src/extensions/`.
@@ -205,6 +213,7 @@ Mutations:
 | `windows.remove(id)` | A popup window's tab, as `tabs.remove`. Refused for the desk window. |
 | `tabs.setZoom`, `getZoom` | The guest: `WebViewGuest::ZoomTo`, per site via `HostZoomMap`. The element gets `domicile-zoom-change`. `0` is the default. Values outside Blink's browser range are refused. |
 | `tabs.getZoomSettings`, `setZoomSettings` | The desk: `automatic`, `per-origin` only. Other settings are refused. |
+| `action.openPopup()` | The shell's tray (above) |
 | `tabs.move`, `group`, `ungroup`, `discard`, `duplicate`, `createSplit`, `unsplit`; `tabs.update`'s `pinned`, `openerTabId`, `autoDiscardable`; `windows.update` bounds and state; any `windows.create` other than a `popup` with one `url` | Error: `not supported on a Domicile desk` |
 
 ### Popup windows
@@ -287,6 +296,7 @@ Engine guards in `packages/domicile-engine/scripts/`:
 
 - `guard-extension-installer.sh`
 - `guard-extension-tray.sh`
+- `guard-extension-open-popup.sh`
 - `guard-webview-content-script.sh`
 - `guard-webview-tabs.sh`
 - `guard-webview-active-tab.sh`
