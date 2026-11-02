@@ -16,6 +16,24 @@ How CI publishes prebuilt engines and how the flake picks one.
 - `/packages/domicile-engine/scripts/update-engine-release.sh` moves `engine-release.nix` to the newest
   release.
 
+## Which Chromium ships
+
+- `CHROMIUM_PIN` names a Chromium `main` revision, not a release branch.
+  `CHROMIUM_VERSION` holds its version, which the website shows.
+- A commit's engine is its pin plus `patches/` and `src/`: both builds of a
+  series come from the same pin, and
+  `packages/ci/tests/test-the-pinned-engine-is-this-series.sh` checks the
+  pinned engine is this series.
+- A newer Chromium arrives as a pull request that moves the pin
+  ([Moving the pin](BUILD-MACHINE.md#moving-the-pin)). CI builds and tests it
+  like any fork change.
+- People get it with the next Domicile release: the distribution packages
+  carry the engine inside `domicile`, and the flake pins it, so a package
+  update or a flake update brings it.
+- There is no fixed schedule for moving the pin, and no commitment on how fast
+  a Chromium security fix ships. A fix reaches Domicile when the pin moves
+  past it.
+
 ## Release names
 
 - A release is tagged `engine-s<identity>`.

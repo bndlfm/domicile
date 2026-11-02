@@ -175,6 +175,11 @@ does_not_trigger "a repin does not build the engine" \
 does_not_trigger "the official engine's repin does not build the engine" \
   packages/domicile-engine/engine-official.nix "${patterns[@]}"
 
+# The version the website shows. The build reads `CHROMIUM_PIN`, not this.
+real packages/domicile-engine/CHROMIUM_VERSION &&
+  does_not_trigger "the pin's version does not build the engine" \
+    packages/domicile-engine/CHROMIUM_VERSION "${patterns[@]}"
+
 real packages/domicile-engine/upstream/setoverridechildpaintflags.md &&
   does_not_trigger "prose under the package does not build the engine" \
     packages/domicile-engine/upstream/setoverridechildpaintflags.md "${patterns[@]}"
