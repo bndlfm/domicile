@@ -29,6 +29,7 @@ package's default export path:
 | `Sharing` | `@domicile-desktop/manganese-bar-module-sharing` |
 | `KeptAwake` | `@domicile-desktop/manganese-bar-module-idle-inhibitor/kept-awake` |
 | `Cast` | `@domicile-desktop/manganese-bar-module-cast` |
+| `Downloads` | `@domicile-desktop/manganese-bar-module-downloads` |
 
 Items no default bar has:
 
@@ -76,7 +77,7 @@ Every bar and the lock screen share one watch per system readout. See
 - **left**: launcher button, tray, workspaces
 - **center**: clock
 - **right**: sharing indicator (while recorded), Cast (while a TV is near or
-  cast to), keymap (with several keymaps), quick settings, notification bell
+  cast to), downloads (while there are any), keymap (with several keymaps), quick settings, notification bell
 
 The theme selector, idle inhibitor, brightness, volume, Bluetooth, network and
 battery items are still exported, for a bar that wants them one by one.
@@ -417,6 +418,19 @@ export const Shell = runManganese({
 - Click lists each app, each website with its icon, and **You** with a
   **Turn off** button while quick settings' Keep awake is on.
 - See [IDLE.md](../../../docs/IDLE.md#what-holds-the-desktop-awake).
+
+## Downloads
+
+- Shown while there are downloads, from any browser or app window. A download
+  icon, with how far the ones in progress have come ("23%"); the icon pulses
+  while a size is unknown.
+- Click lists every download, newest first: the file name, how far it has come
+  and the time left, or the site it came from once it finished or failed.
+  **Cancel** stops one in progress; **Open**, **Show in folder** and
+  **Remove from list** show on hover for one that finished. **Clear all**
+  forgets every one not in progress; the files stay.
+- The engine keeps the list, so a download outlives its window. See
+  [SHELL-BROWSER-WINDOWS.md](../../../docs/SHELL-BROWSER-WINDOWS.md#downloads).
 
 ## Gmail
 
