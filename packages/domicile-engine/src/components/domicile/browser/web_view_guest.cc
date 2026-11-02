@@ -32,7 +32,7 @@
 #include "base/time/time.h"
 #include "base/types/expected.h"
 #include "components/domicile/browser/context_menu.h"
-#include "components/domicile/browser/download_tally.h"
+#include "components/domicile/browser/desk_downloads.h"
 #include "components/domicile/browser/file_choice.h"
 #include "components/domicile/browser/page_matches.h"
 #include "components/domicile/browser/placeholder_stage.h"
@@ -47,6 +47,7 @@
 #include "components/security_state/core/security_state.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/document_service.h"
+#include "components/download/public/common/download_item.h"
 #include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/navigation_controller.h"
@@ -611,21 +612,6 @@ void FilesChosen(scoped_refptr<content::FileSelectListener> listener,
   listener->FileSelected(AsFileInfos(*chosen), base::FilePath(), mode);
 }
 
-// Where a download is, for TallyDownloads.
-DownloadStage DownloadStageOf(download::DownloadItem::DownloadState state) {
-  switch (state) {
-    case download::DownloadItem::IN_PROGRESS:
-      return DownloadStage::kInProgress;
-    case download::DownloadItem::COMPLETE:
-      return DownloadStage::kComplete;
-    case download::DownloadItem::CANCELLED:
-    case download::DownloadItem::INTERRUPTED:
-      return DownloadStage::kStopped;
-    case download::DownloadItem::MAX_DOWNLOAD_STATE:
-      NOTREACHED();
-  }
-}
-
 // Passes the shell's download location to //chrome.
 void DownloadPathChosen(
     base::OnceCallback<void(std::optional<base::FilePath>)> chosen,
@@ -906,7 +892,6 @@ void WebViewGuest::ReportEverything() {
   reported_can_go_forward_ = false;
   reported_loading_ = false;
   reported_load_progress_ = 0.0;
-  reported_downloads_ = DownloadTally();
   reported_url_ = GURL();
   reported_security_ = mojom::WebViewSecurity::kNeutral;
   reported_find_matches_ = 0;
@@ -918,7 +903,6 @@ void WebViewGuest::ReportEverything() {
   ReportPage();
   ReportLoading(guest_contents_->ShouldShowLoadingUI());
   ReportLoadProgress(guest_contents_->GetLoadProgress());
-  ReportDownloads();
   // Bypasses ReportZoom, which would also notify chrome.tabs of an unchanged
   // zoom.
   if (!blink::ZoomValuesEqual(reported_zoom_, 1.0)) {
@@ -1155,29 +1139,6 @@ void WebViewGuest::Stop() {
   CHECK(guest_contents_);
   // NavigationController has no Stop; the WebContents cancels the load.
   guest_contents_->Stop();
-}
-
-void WebViewGuest::ClearCompletedDownloads() {
-  std::erase_if(downloads_, [this](download::DownloadItem* item) {
-    if (item->GetState() != download::DownloadItem::COMPLETE) {
-      return false;
-    }
-    download_observations_.RemoveObservation(item);
-    return true;
-  });
-  ReportDownloads();
-}
-
-void WebViewGuest::RemoveCompletedDownload(const std::string& path) {
-  std::erase_if(downloads_, [this, &path](download::DownloadItem* item) {
-    if (item->GetState() != download::DownloadItem::COMPLETE ||
-        item->GetTargetFilePath().AsUTF8Unsafe() != path) {
-      return false;
-    }
-    download_observations_.RemoveObservation(item);
-    return true;
-  });
-  ReportDownloads();
 }
 
 void WebViewGuest::Reload() {
@@ -1740,27 +1701,6 @@ void WebViewGuest::ReportLoadProgress(double progress) {
   }
 }
 
-void WebViewGuest::ReportDownloads() {
-  std::vector<DownloadReading> readings;
-  for (const download::DownloadItem* item : downloads_) {
-    readings.push_back(
-        {.stage = DownloadStageOf(item->GetState()),
-         .has_target = !item->GetTargetFilePath().empty(),
-         .received_bytes = item->GetReceivedBytes(),
-         .total_bytes = item->GetTotalBytes(),
-         .path = item->GetTargetFilePath().AsUTF8Unsafe()});
-  }
-  const DownloadTally tally = TallyDownloads(readings);
-  if (tally != reported_downloads_) {
-    reported_downloads_ = tally;
-    // Logged for guard-webview-download.sh.
-    LOG(INFO) << "domicile: a <webview> reported " << tally.count
-              << " downloads in progress.";
-    client_->DownloadsChanged(tally.count, tally.received_bytes,
-                              tally.total_bytes, tally.completed);
-  }
-}
-
 namespace {
 
 // The assumed size of an icon whose link gives none: 180 px for a touch icon,
@@ -2012,25 +1952,11 @@ void WebViewGuest::OnDownloadCreated(content::DownloadManager* manager,
   if (content::DownloadItemUtils::GetWebContents(item) != guest_contents_) {
     return;
   }
-  downloads_.push_back(item);
-  download_observations_.AddObservation(item);
-  ReportDownloads();
+  DeskDownloads::Get().Add(item, window_id_);
 }
 
 void WebViewGuest::ManagerGoingDown(content::DownloadManager* manager) {
-  download_observations_.RemoveAllObservations();
-  downloads_.clear();
   download_manager_observation_.Reset();
-}
-
-void WebViewGuest::OnDownloadUpdated(download::DownloadItem* item) {
-  ReportDownloads();
-}
-
-void WebViewGuest::OnDownloadDestroyed(download::DownloadItem* item) {
-  download_observations_.RemoveObservation(item);
-  std::erase(downloads_, item);
-  ReportDownloads();
 }
 
 void WebViewGuest::DidReceiveFindReply(int request_id,
@@ -2453,8 +2379,6 @@ void WebViewGuest::WebContentsDestroyed() {
   zoom_subscription_ = {};
   settings_observation_.Reset();
   download_manager_observation_.Reset();
-  download_observations_.RemoveAllObservations();
-  downloads_.clear();
   guest_contents_ = nullptr;
   if (self_owned_) {
     delete this;

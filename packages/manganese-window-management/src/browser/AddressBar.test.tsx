@@ -10,25 +10,15 @@ const BAR = {
   address: "https://example.com",
   canGoBack: false,
   canGoForward: false,
-  downloads: {
-    completed: 0,
-    completedPaths: [],
-    count: 0,
-    receivedBytes: 0,
-    totalBytes: 0,
-  },
   holdZoom: false,
   isPrivate: false,
   loading: false,
   loadProgress: 0,
   onBack: () => undefined,
-  onClearDownloads: () => undefined,
-  onDownloadsAnchor: () => undefined,
   onForward: () => undefined,
   onNavigate: () => undefined,
   onReload: () => undefined,
   onSetSitePermission: () => undefined,
-  onShowDownloads: () => undefined,
   onStop: () => undefined,
   onZoomAnchor: () => undefined,
   onZoomIn: () => undefined,
@@ -161,185 +151,6 @@ describe("AddressBar", () => {
       render(<AddressBar {...BAR} />);
 
       expect(screen.queryByRole("progressbar")).toBeNull();
-    });
-  });
-
-  describe("the download indicator", () => {
-    it("says how far the page's download has come", () => {
-      render(
-        <AddressBar
-          {...BAR}
-          downloads={{
-            completed: 0,
-            completedPaths: [],
-            count: 1,
-            receivedBytes: 456,
-            totalBytes: 1000,
-          }}
-        />,
-      );
-
-      const indicator = screen.getByRole("progressbar", {
-        name: "Downloading",
-      });
-      expect(indicator).toHaveAttribute("aria-valuenow", "45");
-      expect(indicator).toHaveTextContent("45%");
-    });
-
-    it("says how many files when there are several", () => {
-      render(
-        <AddressBar
-          {...BAR}
-          downloads={{
-            completed: 0,
-            completedPaths: [],
-            count: 3,
-            receivedBytes: 10,
-            totalBytes: 100,
-          }}
-        />,
-      );
-
-      expect(
-        screen.getByRole("progressbar", { name: "Downloading 3 files" }),
-      ).toBeInTheDocument();
-    });
-
-    // A sum missing one size would read as nearly done when it is not.
-    it("claims no amount when a download's size is unknown", () => {
-      render(
-        <AddressBar
-          {...BAR}
-          downloads={{
-            completed: 0,
-            completedPaths: [],
-            count: 1,
-            receivedBytes: 10,
-            totalBytes: 0,
-          }}
-        />,
-      );
-
-      const indicator = screen.getByRole("progressbar", {
-        name: "Downloading",
-      });
-      expect(indicator).not.toHaveAttribute("aria-valuenow");
-      expect(indicator.textContent).toBe("");
-    });
-
-    it("keeps saying a download finished until it is cleared", async () => {
-      const calls: string[] = [];
-      render(
-        <AddressBar
-          {...BAR}
-          downloads={{
-            completed: 1,
-            completedPaths: [],
-            count: 0,
-            receivedBytes: 0,
-            totalBytes: 0,
-          }}
-          onClearDownloads={() => {
-            calls.push("clear");
-          }}
-        />,
-      );
-
-      expect(screen.getByRole("status")).toHaveTextContent("Downloaded");
-      await userEvent.click(control("Clear finished downloads"));
-
-      expect(calls).toStrictEqual(["clear"]);
-    });
-
-    it("shows the finished downloads when pressed", async () => {
-      const calls: string[] = [];
-      render(
-        <AddressBar
-          {...BAR}
-          downloads={{
-            completed: 1,
-            completedPaths: [],
-            count: 0,
-            receivedBytes: 0,
-            totalBytes: 0,
-          }}
-          onShowDownloads={() => {
-            calls.push("show");
-          }}
-        />,
-      );
-
-      await userEvent.click(control("Downloaded"));
-
-      expect(calls).toStrictEqual(["show"]);
-    });
-
-    it("hands over the indicator for the downloads popup to hang from", () => {
-      const anchors: (HTMLElement | null)[] = [];
-      render(
-        <AddressBar
-          {...BAR}
-          downloads={{
-            completed: 1,
-            completedPaths: [],
-            count: 0,
-            receivedBytes: 0,
-            totalBytes: 0,
-          }}
-          onDownloadsAnchor={(anchor) => {
-            anchors.push(anchor);
-          }}
-        />,
-      );
-
-      expect(anchors.at(-1)).toContainElement(screen.getByRole("status"));
-    });
-
-    it("says how many finished when there are several", () => {
-      render(
-        <AddressBar
-          {...BAR}
-          downloads={{
-            completed: 2,
-            completedPaths: [],
-            count: 0,
-            receivedBytes: 0,
-            totalBytes: 0,
-          }}
-        />,
-      );
-
-      expect(screen.getByRole("status")).toHaveTextContent("2 downloaded");
-    });
-
-    // The finished ones wait until nothing is in progress.
-    it("shows progress over finished downloads", () => {
-      render(
-        <AddressBar
-          {...BAR}
-          downloads={{
-            completed: 1,
-            completedPaths: [],
-            count: 1,
-            receivedBytes: 10,
-            totalBytes: 100,
-          }}
-        />,
-      );
-
-      expect(
-        screen.getByRole("progressbar", { name: "Downloading" }),
-      ).toBeInTheDocument();
-      expect(screen.queryByRole("status")).toBeNull();
-    });
-
-    it("is gone when nothing is downloading", () => {
-      render(<AddressBar {...BAR} />);
-
-      expect(
-        screen.queryByRole("progressbar", { name: /Downloading/ }),
-      ).toBeNull();
-      expect(screen.queryByRole("status")).toBeNull();
     });
   });
 

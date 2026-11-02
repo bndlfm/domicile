@@ -12,18 +12,18 @@
 //   GUARD file-chooser mode=…    the element asked, and for what
 //     suggested=…
 //   GUARD answered               the answer did not throw
-//   GUARD downloads count=…      the element's downloads changed
-//     received=… total=…
-//     completed=… paths=…
+//   GUARD downloads …            the desk's downloads changed: one
+//                                <state>:<path>:<window> per download
+//   GUARD download-removed       the finished download this page removed
+//                                left the list
 //
-// Removes a finished download by its path as soon as one is reported, with
-// nothing in progress.
+// Removes a finished download as soon as one is listed.
 //
 // The guest page logs what it received; see
 // guard-webview-file-chooser-server.py. Domicile calls `HostShell` once the module
 // loads.
 
-export const HostShell = () => {
+export const HostShell = (_root, host) => {
   /**
    * Reads a required query parameter. No default, so a misconfigured run fails.
    */
@@ -83,13 +83,23 @@ export const HostShell = () => {
     say("answered");
   };
 
-  document.addEventListener("domicile-downloads-change", (event) => {
-    const view = event.target;
+  // The finished download removeDownload() was called with.
+  let removed;
+  host.addEventListener("downloadschanged", () => {
+    const listed = host.downloads;
     say(
-      `downloads count=${view.downloadCount} received=${view.downloadReceivedBytes} total=${view.downloadTotalBytes} completed=${view.downloadCompletedCount} paths=${view.downloadCompletedPaths.join(",")}`,
+      `downloads ${listed.map((download) => `${download.state}:${download.path}:${download.window}`).join(" ")}`,
     );
-    if (view.downloadCount === 0 && view.downloadCompletedCount > 0) {
-      view.removeCompletedDownload(view.downloadCompletedPaths[0]);
+    if (removed === undefined) {
+      const finished = listed.find((download) => download.state === "complete");
+      if (finished !== undefined) {
+        removed = finished.id;
+        host.removeDownload(finished.id);
+      }
+    } else {
+      if (!listed.some((download) => download.id === removed)) {
+        say("download-removed");
+      }
     }
   });
 
