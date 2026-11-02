@@ -711,7 +711,7 @@
         dontFixup = true;
         outputHashMode = "recursive";
         outputHashAlgo = "sha256";
-        outputHash = "sha256-wlib/Putj4Qb5eqxi0p1j/QpFVgeWTl8349mKz4eUEQ=";
+        outputHash = "sha256-hDX9tTmUbvUcx54+LxEOJ7gCrEvCP/eWNvkGqQh001w=";
       };
 
       # The production modules `shellWorkspace` ships, from
@@ -737,7 +737,7 @@
         dontFixup = true;
         outputHashMode = "recursive";
         outputHashAlgo = "sha256";
-        outputHash = "sha256-9OzsZM/P+PfseuQ4HN29gx+5lzIua4ocoP2p3c+z1SU=";
+        outputHash = "sha256-YZYEDNI/lDjevzoeTaUz066dtkSR0Qz7NoxOVLHQAM4=";
       };
 
 

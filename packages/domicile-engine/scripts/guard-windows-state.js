@@ -32,6 +32,7 @@ const EVENT_NAMES = [
   "focusrequested",
   "browserwindowschanged",
   "castsinkschanged",
+  "downloadschanged",
   "displayschanged",
   "windowschanged",
   "focusedwindowchanged",

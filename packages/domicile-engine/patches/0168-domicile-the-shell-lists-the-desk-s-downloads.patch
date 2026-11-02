@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: domicile CI <ci@domicile.invalid>
+Date: Mon, 2 Nov 2026 00:00:00 +0000
+Subject: [PATCH] domicile: the shell lists the desk's downloads
+
+The shell lists every download a browser window's page started, kept
+after its window closes, and cancels and removes them. Its browser side
+binds Downloads for the shell's document only, as CastSinks does: a page
+that could reach it could read where every file was saved. Blink builds
+the download interface that `domicile.downloads` lists.
+
+Verified: not built. This repository cannot build Chromium; the engine
+job builds it on `crux`.
+---
+ .../browser/chrome_browser_interface_binders.cc  | 16 ++++++++++++++++
+ .../renderer/bindings/generated_in_modules.gni   |  4 ++++
+ .../blink/renderer/bindings/idl_in_modules.gni   |  1 +
+ 3 files changed, 21 insertions(+)
+
+diff --git a/chrome/browser/chrome_browser_interface_binders.cc b/chrome/browser/chrome_browser_interface_binders.cc
+index 8a5a575..3c7d1e2 100644
+--- a/chrome/browser/chrome_browser_interface_binders.cc
++++ b/chrome/browser/chrome_browser_interface_binders.cc
+@@ -8,6 +8,7 @@
+ #include "chrome/browser/domicile/domicile_extension_installer.h"
+ #include "chrome/browser/domicile/domicile_browser_windows.h"
+ #include "chrome/browser/domicile/domicile_cast_sinks.h"
++#include "chrome/browser/domicile/domicile_downloads.h"
+ #include "chrome/browser/domicile/domicile_extension_tray.h"
+ #include "chrome/browser/domicile/domicile_pointer_warp.h"
+ #include "chrome/browser/domicile/domicile_shell_fetch.h"
+@@ -671,6 +672,21 @@ void PopulateChromeFrameBinders(
+         domicile::BindCastSinks(frame, std::move(receiver));
+       }));
+ 
++  // Domicile's engine fork: the desk's downloads, for the shell.
++  //
++  // Gated at BIND time like the TVs: a page that could reach this could read
++  // where every file was saved, and cancel downloads.
++  map->Add<domicile::mojom::Downloads>(base::BindRepeating(
++      [](content::RenderFrameHost* frame,
++         mojo::PendingReceiver<domicile::mojom::Downloads> receiver) {
++        if (!domicile::IsShellOrigin(frame->GetLastCommittedOrigin())) {
++          mojo::ReportBadMessage(
++              "domicile: only the shell may list the downloads.");
++          return;
++        }
++        domicile::BindDownloads(frame, std::move(receiver));
++      }));
++
+   // Domicile's engine fork: GETs with the profile's cookies, for the shell.
+   //
+   // Gated at BIND time like the browser windows, and for their reason: a page
+diff --git a/third_party/blink/renderer/bindings/generated_in_modules.gni b/third_party/blink/renderer/bindings/generated_in_modules.gni
+index 6e867d1..5e0a9d4 100644
+--- a/third_party/blink/renderer/bindings/generated_in_modules.gni
++++ b/third_party/blink/renderer/bindings/generated_in_modules.gni
+@@ -1588,6 +1588,8 @@ generated_enumeration_sources_in_modules = [
+   "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_distance_model_type.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_cursor_shape.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_cursor_shape.h",
++  "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_download_state.cc",
++  "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_download_state.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_theme.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_theme.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_tray_action.cc",
+@@ -2339,6 +2341,8 @@ generated_interface_sources_in_modules = [
+   "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_browser_window.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_cast_sink.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_cast_sink.h",
++  "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_download.cc",
++  "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_download.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_display.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_display.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_domicile_shortcut_event.cc",
+diff --git a/third_party/blink/renderer/bindings/idl_in_modules.gni b/third_party/blink/renderer/bindings/idl_in_modules.gni
+index 4daa8a6..9f2b8a7 100644
+--- a/third_party/blink/renderer/bindings/idl_in_modules.gni
++++ b/third_party/blink/renderer/bindings/idl_in_modules.gni
+@@ -288,6 +288,7 @@ static_idl_files_in_modules = [
+   "//third_party/blink/renderer/modules/domicile/domicile_fetch_response.idl",
+   "//third_party/blink/renderer/modules/domicile/domicile_browser_window.idl",
+   "//third_party/blink/renderer/modules/domicile/domicile_cast_sink.idl",
++  "//third_party/blink/renderer/modules/domicile/domicile_download.idl",
+   "//third_party/blink/renderer/modules/domicile/domicile_host.idl",
+   "//third_party/blink/renderer/modules/domicile/domicile_display.idl",
+   "//third_party/blink/renderer/modules/domicile/domicile_shortcut_event.idl",

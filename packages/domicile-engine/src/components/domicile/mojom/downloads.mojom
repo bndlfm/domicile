@@ -1,0 +1,74 @@
+// Copyright 2026 Connor Prussin
+// SPDX-License-Identifier: MIT
+
+module domicile.mojom;
+
+import "url/mojom/url.mojom";
+
+// The desk's downloads: every download a browser window's page started while
+// the browser runs, listed until the shell removes it. A download stays listed
+// after its window closes. See "Downloads" in the Domicile repository's
+// docs/SHELL-BROWSER-WINDOWS.md.
+//
+// - Listed once the shell has said where it goes, as the page's
+//   `domicile-file-chooser` asks. A download canceled there is never listed.
+// - A canceled download leaves the list. A finished or failed one stays until
+//   Remove or Clear.
+// - Downloads from an earlier run of the browser are not listed.
+//
+// A separate pipe, as for BrowserWindows: downloads are browser state, and
+// ControlChannel relays the compositor's socket.
+//
+// Access control is the binder's, as for ControlChannel: the browser binds
+// this only for a document with the shell's origin.
+
+enum DownloadState {
+  kInProgress,
+  kComplete,
+  // Interrupted by the network or the disk.
+  kFailed,
+};
+
+// One download.
+struct Download {
+  // The id Cancel and Remove take: the download's GUID.
+  string id;
+  DownloadState state;
+  // Where it is saved, as UTF-8.
+  string path;
+  int64 received_bytes;
+  // 0 when the server sent no size.
+  int64 total_bytes;
+  // The browser window whose page started it, as BrowserWindow.id names it.
+  // Empty for a <webview> that is not a browser window. The window may have
+  // closed since.
+  string window;
+  // The address of the page that started it.
+  url.mojom.Url page;
+};
+
+// Renderer -> browser, bound per document.
+interface Downloads {
+  // Sets the list's receiver. The list is sent immediately and on every
+  // change. A second client is a bad message.
+  SetClient(pending_remote<DownloadsClient> client);
+
+  // Cancels download `id`, which leaves the next list. An unknown id, or one
+  // no longer in progress, is a cancel that raced its end, and does nothing.
+  Cancel(string id);
+
+  // Removes download `id` from the list. The file stays. A download in
+  // progress, or an unknown id, is a remove that raced a change, and does
+  // nothing.
+  Remove(string id);
+
+  // Removes every download not in progress from the list. The files stay.
+  Clear();
+};
+
+// Browser -> renderer.
+interface DownloadsClient {
+  // The whole list, oldest first, on every change, including each progress
+  // update. Deltas would leave a page wrong for good after one missed message.
+  DownloadsChanged(array<Download> downloads);
+};

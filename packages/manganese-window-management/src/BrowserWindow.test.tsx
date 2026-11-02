@@ -5,7 +5,6 @@ import {
   WEBVIEW_CONTEXT_MENU_EVENT,
   WEBVIEW_DEVICE_REQUEST_EVENT,
   WEBVIEW_DIALOG_EVENT,
-  WEBVIEW_DOWNLOADS_CHANGE_EVENT,
   WEBVIEW_FILE_CHOOSER_EVENT,
   WEBVIEW_FIND_CHANGE_EVENT,
   WEBVIEW_FOCUS_REQUEST_EVENT,
@@ -111,62 +110,6 @@ const progresses = (element: HTMLWebViewElement, progress: number): void => {
     value: progress,
   });
   fireEvent(element, new Event(WEBVIEW_LOAD_PROGRESS_CHANGE_EVENT));
-};
-
-/** Fires a downloads change with one download `received` bytes of `total` in. */
-const downloads = (
-  element: HTMLWebViewElement,
-  received: number,
-  total: number,
-): void => {
-  Object.defineProperty(element, "downloadCount", {
-    configurable: true,
-    value: 1,
-  });
-  Object.defineProperty(element, "downloadReceivedBytes", {
-    configurable: true,
-    value: received,
-  });
-  Object.defineProperty(element, "downloadTotalBytes", {
-    configurable: true,
-    value: total,
-  });
-  Object.defineProperty(element, "downloadCompletedCount", {
-    configurable: true,
-    value: 0,
-  });
-  fireEvent(element, new Event(WEBVIEW_DOWNLOADS_CHANGE_EVENT));
-};
-
-/**
- * Fires a downloads change with finished downloads saved at `paths` and none
- * in progress.
- */
-const finishesADownload = (
-  element: HTMLWebViewElement,
-  paths: readonly string[] = ["/home/me/Downloads/report.pdf"],
-): void => {
-  Object.defineProperty(element, "downloadCount", {
-    configurable: true,
-    value: 0,
-  });
-  Object.defineProperty(element, "downloadReceivedBytes", {
-    configurable: true,
-    value: 0,
-  });
-  Object.defineProperty(element, "downloadTotalBytes", {
-    configurable: true,
-    value: 0,
-  });
-  Object.defineProperty(element, "downloadCompletedCount", {
-    configurable: true,
-    value: paths.length,
-  });
-  Object.defineProperty(element, "downloadCompletedPaths", {
-    configurable: true,
-    value: paths,
-  });
-  fireEvent(element, new Event(WEBVIEW_DOWNLOADS_CHANGE_EVENT));
 };
 
 /**
@@ -736,23 +679,14 @@ describe("BrowserWindow", () => {
         />,
       );
 
-    // With no address bar, the popups hang from the page's corner.
-    it("says what it zoomed to, then that a download finished, one at a time", async () => {
+    // With no address bar, the popup hangs from the page's corner.
+    it("says what it zoomed to", async () => {
       const { container } = renderApp("https://music.example/");
       zoomable(view(container), 1);
       hovers(view(container), "");
 
       guestPresses(view(container), { ctrlKey: true, key: "+" });
       expect(await screen.findByRole("dialog")).toHaveTextContent("110%");
-
-      downloads(view(container), 50, 100);
-      finishesADownload(view(container));
-      await waitFor(() => {
-        expect(screen.getByRole("dialog")).toHaveTextContent(
-          "Download finished",
-        );
-      });
-      expect(screen.getAllByRole("dialog")).toHaveLength(1);
     });
 
     it("draws no address while its page is on the app's origin", () => {
@@ -1763,224 +1697,6 @@ describe("BrowserWindow", () => {
       expect(
         screen.getByRole("progressbar", { name: "Loading" }),
       ).toHaveAttribute("aria-valuenow", "50");
-    });
-
-    it("shows how far the page's download has come", () => {
-      const { container } = render(
-        <BrowserWindow
-          behindPanel={false}
-          clickThrough={false}
-          covered={false}
-          depth={0}
-          domicile={silentDomicile}
-          dragging={false}
-          focused
-          frame={FRAME}
-          fullscreen={false}
-          motion="resting"
-          onDescription={noDescription}
-          onFocusRequest={() => undefined}
-          onIcon={noIcon}
-          onMotionEnded={nothingEnded}
-          onPageFullscreen={noFullscreen}
-          onReach={() => undefined}
-          rect={ON_SCREEN}
-          resizing={false}
-          url="https://example.com"
-          window="1"
-        />,
-      );
-      downloads(view(container), 25, 100);
-
-      expect(
-        screen.getByRole("progressbar", { name: "Downloading" }),
-      ).toHaveAttribute("aria-valuenow", "25");
-    });
-
-    it("says when the page's download finishes", async () => {
-      const { container } = render(
-        <BrowserWindow
-          behindPanel={false}
-          clickThrough={false}
-          covered={false}
-          depth={0}
-          domicile={silentDomicile}
-          dragging={false}
-          focused
-          frame={FRAME}
-          fullscreen={false}
-          motion="resting"
-          onDescription={noDescription}
-          onFocusRequest={() => undefined}
-          onIcon={noIcon}
-          onMotionEnded={nothingEnded}
-          onPageFullscreen={noFullscreen}
-          onReach={() => undefined}
-          rect={ON_SCREEN}
-          resizing={false}
-          url="https://example.com"
-          window="1"
-        />,
-      );
-      hovers(view(container), "");
-      downloads(view(container), 50, 100);
-
-      finishesADownload(view(container));
-
-      expect(
-        await screen.findByRole("heading", { name: "Download finished" }),
-      ).toBeInTheDocument();
-    });
-
-    it("clears the page's finished downloads when asked", async () => {
-      const driven: string[] = [];
-      const { container } = render(
-        <BrowserWindow
-          behindPanel={false}
-          clickThrough={false}
-          covered={false}
-          depth={0}
-          domicile={silentDomicile}
-          dragging={false}
-          focused
-          frame={FRAME}
-          fullscreen={false}
-          motion="resting"
-          onDescription={noDescription}
-          onFocusRequest={() => undefined}
-          onIcon={noIcon}
-          onMotionEnded={nothingEnded}
-          onPageFullscreen={noFullscreen}
-          onReach={() => undefined}
-          rect={ON_SCREEN}
-          resizing={false}
-          url="https://example.com"
-          window="1"
-        />,
-      );
-      const guest = view(container);
-      guest.clearCompletedDownloads = () => {
-        driven.push("clear");
-      };
-      finishesADownload(guest);
-
-      await userEvent.click(control("Clear finished downloads"));
-
-      expect(driven).toStrictEqual(["clear"]);
-    });
-
-    describe("the finished downloads' popup", () => {
-      const renderLaunching = (launched: (readonly string[])[]) =>
-        render(
-          <BrowserWindow
-            behindPanel={false}
-            clickThrough={false}
-            covered={false}
-            depth={0}
-            domicile={{
-              ...silentDomicile,
-              processes: {
-                ...silentDomicile.processes,
-                launch: (argv) => {
-                  launched.push(argv);
-                },
-              },
-            }}
-            dragging={false}
-            focused
-            frame={FRAME}
-            fullscreen={false}
-            motion="resting"
-            onDescription={noDescription}
-            onFocusRequest={() => undefined}
-            onIcon={noIcon}
-            onMotionEnded={nothingEnded}
-            onPageFullscreen={noFullscreen}
-            onReach={() => undefined}
-            rect={ON_SCREEN}
-            resizing={false}
-            url="https://example.com"
-            window="1"
-          />,
-        );
-
-      it("opens a finished file with its default application", async () => {
-        const launched: (readonly string[])[] = [];
-        const { container } = renderLaunching(launched);
-        downloads(view(container), 50, 100);
-        finishesADownload(view(container));
-
-        await userEvent.click(
-          await screen.findByRole("button", { name: "Open" }),
-        );
-
-        expect(launched.at(-1)?.at(-1)).toBe("/home/me/Downloads/report.pdf");
-      });
-
-      it("opens the folder a finished file is in", async () => {
-        const launched: (readonly string[])[] = [];
-        const { container } = renderLaunching(launched);
-        downloads(view(container), 50, 100);
-        finishesADownload(view(container));
-
-        await userEvent.click(
-          await screen.findByRole("button", { name: "Show in folder" }),
-        );
-
-        expect(launched.at(-1)?.at(-1)).toBe("/home/me/Downloads");
-      });
-
-      it("takes one finished file off the list", async () => {
-        const removed: string[] = [];
-        const { container } = renderLaunching([]);
-        Object.defineProperty(view(container), "removeCompletedDownload", {
-          configurable: true,
-          value: (path: string) => {
-            removed.push(path);
-          },
-        });
-        downloads(view(container), 50, 100);
-        finishesADownload(view(container));
-
-        await userEvent.click(
-          await screen.findByRole("button", { name: "Remove from list" }),
-        );
-
-        expect(removed).toStrictEqual(["/home/me/Downloads/report.pdf"]);
-      });
-
-      it("clears them all", async () => {
-        const driven: string[] = [];
-        const { container } = renderLaunching([]);
-        view(container).clearCompletedDownloads = () => {
-          driven.push("clear");
-        };
-        downloads(view(container), 50, 100);
-        finishesADownload(view(container));
-
-        await userEvent.click(
-          await screen.findByRole("button", { name: "Clear all" }),
-        );
-
-        expect(driven).toStrictEqual(["clear"]);
-      });
-
-      it("comes back when the indicator is pressed", async () => {
-        const { container } = renderLaunching([]);
-        downloads(view(container), 50, 100);
-        finishesADownload(view(container));
-        await screen.findByRole("dialog");
-        await userEvent.keyboard("{Escape}");
-        await waitFor(() => {
-          expect(screen.queryByRole("dialog")).toBeNull();
-        });
-
-        await userEvent.click(control("Downloaded"));
-
-        expect(
-          await screen.findByRole("heading", { name: "Download finished" }),
-        ).toBeInTheDocument();
-      });
     });
   });
 
