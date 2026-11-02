@@ -2,6 +2,7 @@
   "extends": ["//"],
   "tasks": {
     "test:shell": {
+      "dependsOn": ["@domicile-desktop/manganese#build:publish"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/.changeset/**",

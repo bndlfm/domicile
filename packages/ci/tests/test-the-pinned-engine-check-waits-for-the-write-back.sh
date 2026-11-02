@@ -16,6 +16,9 @@
 #     generated file was edited.
 #
 # The GitHub API is faked; the decision is under test.
+#
+# Rewrites the checkout's engine-release.nix while it runs.
+# check-runner: alone
 set -u
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"

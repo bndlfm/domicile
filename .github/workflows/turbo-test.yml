@@ -25,18 +25,40 @@ permissions:
   actions: read
 
 jobs:
-  build:
+  # The engine package's checks run one at a time and take about as long as
+  # every other package together, so they get their own runner.
+  test:
+    name: test (${{ matrix.shard }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: engine
+            filter: "@domicile-desktop/engine"
+          - shard: rest
+            filter: "!@domicile-desktop/engine"
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
+      - name: Cache bun's packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      # Each run saves its own entry. A pull request restores its last run's,
+      # or main's when it has none.
       - name: Restore turbo cache
         uses: actions/cache/restore@v6
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-${{ github.sha }}
+          key: turbo-${{ runner.os }}-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            turbo-${{ runner.os }}-
+            turbo-${{ runner.os }}-${{ matrix.shard }}-
+      - run: .github/scripts/turbo-cache-prune.sh mark .turbo/cache
 
       # `TURBO_CACHE_DIR` points turbo at the restored cache. The
       # pull request's head and base let the pinned-engine check tell a pending
@@ -46,11 +68,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOMICILE_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           DOMICILE_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: bun run turbo run test
+        run: bun run turbo run test --filter='${{ matrix.filter }}'
 
+      - if: ${{ !cancelled() }}
+        run: .github/scripts/turbo-cache-prune.sh prune .turbo/cache
       - name: Save turbo cache
-        if: github.ref == 'refs/heads/main'
+        if: ${{ !cancelled() }}
         uses: actions/cache/save@v6
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-${{ github.sha }}
+          key: turbo-${{ runner.os }}-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+  # The check branch protection requires: green only when every shard is.
+  build:
+    needs: test
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: '[ "${{ needs.test.result }}" = success ]'
