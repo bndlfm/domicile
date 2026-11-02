@@ -20,15 +20,48 @@ TEST(DownloadTallyTest, AddsUpDownloadsInProgress) {
       {.stage = DownloadStage::kInProgress,
        .has_target = true,
        .received_bytes = 10,
-       .total_bytes = 100},
+       .total_bytes = 100,
+       .path = "/home/me/Downloads/a.zip"},
       {.stage = DownloadStage::kInProgress,
        .has_target = true,
        .received_bytes = 5,
-       .total_bytes = 50},
+       .total_bytes = 50,
+       .path = "/home/me/Downloads/b.zip"},
   };
-  EXPECT_EQ(
-      TallyDownloads(downloads),
-      (DownloadTally{.count = 2, .received_bytes = 15, .total_bytes = 150}));
+  const DownloadTally tally = TallyDownloads(downloads);
+  EXPECT_EQ(tally.count, 2);
+  EXPECT_EQ(tally.received_bytes, 15);
+  EXPECT_EQ(tally.total_bytes, 150);
+}
+
+// The shell lists each one in its download popup, with its own progress.
+TEST(DownloadTallyTest, ListsDownloadsInProgressInTheOrderTheyStarted) {
+  const std::vector<DownloadReading> downloads = {
+      {.stage = DownloadStage::kInProgress,
+       .has_target = true,
+       .received_bytes = 10,
+       .total_bytes = 100,
+       .path = "/home/me/Downloads/a.zip"},
+      {.stage = DownloadStage::kComplete,
+       .has_target = true,
+       .received_bytes = 1,
+       .total_bytes = 1,
+       .path = "/home/me/Downloads/b.jpg"},
+      {.stage = DownloadStage::kInProgress,
+       .has_target = true,
+       .received_bytes = 5,
+       .total_bytes = 0,
+       .path = "/home/me/Downloads/c.pdf"},
+  };
+  EXPECT_EQ(TallyDownloads(downloads).running,
+            (std::vector<RunningDownload>{
+                {.path = "/home/me/Downloads/a.zip",
+                 .received_bytes = 10,
+                 .total_bytes = 100},
+                {.path = "/home/me/Downloads/c.pdf",
+                 .received_bytes = 5,
+                 .total_bytes = 0},
+            }));
 }
 
 TEST(DownloadTallyTest, OneDownloadOfUnknownSizeMakesTheTotalUnknown) {
@@ -43,9 +76,9 @@ TEST(DownloadTallyTest, OneDownloadOfUnknownSizeMakesTheTotalUnknown) {
        .received_bytes = 5,
        .total_bytes = 0},
   };
-  EXPECT_EQ(
-      TallyDownloads(downloads),
-      (DownloadTally{.count = 2, .received_bytes = 15, .total_bytes = 0}));
+  const DownloadTally tally = TallyDownloads(downloads);
+  EXPECT_EQ(tally.received_bytes, 15);
+  EXPECT_EQ(tally.total_bytes, 0);
 }
 
 TEST(DownloadTallyTest, CountsFinishedDownloadsApart) {
@@ -60,11 +93,10 @@ TEST(DownloadTallyTest, CountsFinishedDownloadsApart) {
        .total_bytes = 100,
        .path = "/home/me/Downloads/report.pdf"},
   };
-  EXPECT_EQ(TallyDownloads(downloads),
-            (DownloadTally{.count = 1,
-                           .received_bytes = 10,
-                           .total_bytes = 100,
-                           .completed = {"/home/me/Downloads/report.pdf"}}));
+  const DownloadTally tally = TallyDownloads(downloads);
+  EXPECT_EQ(tally.count, 1);
+  EXPECT_EQ(tally.completed,
+            std::vector<std::string>{"/home/me/Downloads/report.pdf"});
 }
 
 // The shell names the files in its download popup, the newest last.

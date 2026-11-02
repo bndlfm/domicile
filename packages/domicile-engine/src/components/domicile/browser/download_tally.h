@@ -32,6 +32,18 @@ struct DownloadReading {
   std::string path;
 };
 
+// One download in progress that the shell has placed.
+struct RunningDownload {
+  // Where it is saved, as UTF-8.
+  std::string path;
+  int64_t received_bytes;
+  // 0 when the server sent no size.
+  int64_t total_bytes;
+
+  friend bool operator==(const RunningDownload&,
+                         const RunningDownload&) = default;
+};
+
 // A <webview>'s downloads, as the element reports them. See DownloadsChanged
 // in components/domicile/mojom/web_view_guest.mojom.
 struct DownloadTally {
@@ -39,6 +51,8 @@ struct DownloadTally {
   int64_t received_bytes = 0;
   // 0 when any counted download's size is unknown.
   int64_t total_bytes = 0;
+  // Each of the counted downloads, in the order they started.
+  std::vector<RunningDownload> running;
   // The paths of downloads that finished, until the shell clears them, in the
   // order they started.
   std::vector<std::string> completed;
@@ -46,8 +60,8 @@ struct DownloadTally {
   friend bool operator==(const DownloadTally&, const DownloadTally&) = default;
 };
 
-// Adds up the downloads in progress that the shell has placed, and counts the
-// finished ones' paths.
+// Adds up and lists the downloads in progress that the shell has placed, and
+// lists the finished ones' paths.
 DownloadTally TallyDownloads(const std::vector<DownloadReading>& downloads);
 
 }  // namespace domicile

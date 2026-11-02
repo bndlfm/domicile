@@ -25,6 +25,7 @@ import { AppAddress } from "./browser/AppAddress";
 import { leftOrigin } from "./browser/app-origin";
 import { BrowserCommand, browserCommandFor } from "./browser/browser-command";
 import { DownloadsPanel } from "./browser/DownloadsPanel";
+import type { RunningDownload } from "./browser/downloads";
 import { FindBar } from "./browser/FindBar";
 import { LinkTarget } from "./browser/LinkTarget";
 import { mediaDeviceChoiceFor } from "./browser/media-devices";
@@ -34,6 +35,7 @@ import { choosePageCommand, pageMenuFor } from "./browser/page-menu";
 import { useFileRequest } from "./browser/useFileRequest";
 import { usePageMenu } from "./browser/usePageMenu";
 import { PagePopupKind, usePagePopup } from "./browser/usePagePopup";
+import { useSecondsLeft } from "./browser/useSecondsLeft";
 import { useSitePermissions } from "./browser/useSitePermissions";
 import { ZoomPanel } from "./browser/ZoomPanel";
 import { zoomedIn, zoomedOut } from "./browser/zoom-steps";
@@ -274,7 +276,11 @@ export const BrowserWindow = ({
     cue: popupCue,
     kind: popupKind,
     show: showPopup,
-  } = usePagePopup(downloads.completed, holdsKeyboard && !covered);
+  } = usePagePopup(
+    { completed: downloads.completed, running: downloads.count },
+    holdsKeyboard && !covered,
+  );
+  const secondsLeft = useSecondsLeft(downloads.running ?? NOT_LISTED);
   // What the popups hang from: the address bar's controls, or the page's
   // corner in a window without one.
   const [zoomAnchor, setZoomAnchor] = useState<HTMLElement | null>(null);
@@ -745,11 +751,25 @@ export const BrowserWindow = ({
             cue={popupCue}
             onClose={closePopup}
             open={
-              popupKind === PagePopupKind.Downloads && downloads.completed > 0
+              popupKind === PagePopupKind.Downloads &&
+              downloads.count + downloads.completed > 0
             }
           >
             <DownloadsPanel
-              count={downloads.completed}
+              downloads={downloads}
+              onCancel={(path) => {
+                withView((loaded) => {
+                  // The panel lists downloads in progress only from an engine
+                  // that lists them, which can also cancel one.
+                  if (loaded.cancelDownload === undefined) {
+                    throw new Error(
+                      "browser window: the engine lists downloads in progress but cannot cancel one",
+                    );
+                  } else {
+                    loaded.cancelDownload(path);
+                  }
+                });
+              }}
               onClearAll={clearDownloads}
               onOpen={(path) => {
                 domicile.processes.launch(openCommand(path));
@@ -772,7 +792,7 @@ export const BrowserWindow = ({
                   openCommand(path.slice(0, path.lastIndexOf("/"))),
                 );
               }}
-              paths={downloads.completedPaths}
+              secondsLeft={secondsLeft}
             />
           </PagePopup>
           {finding && (
@@ -877,6 +897,10 @@ const contentsStyles = flex({
 // Fills the height below the address bar and positions the overlays.
 // How long the zoom and downloads popups stay up, as in Chrome: the zoom
 // briefly, since the page shows it; the downloads long enough to reach them.
+// An engine that does not list its downloads in progress. One array, so the
+// time left is not worked out again on each render.
+const NOT_LISTED: readonly RunningDownload[] = [];
+
 const ZOOM_POPUP_MS = 2000;
 const DOWNLOADS_POPUP_MS = 5000;
 

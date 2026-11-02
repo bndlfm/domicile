@@ -86,7 +86,7 @@ export const HostShell = () => {
   document.addEventListener("domicile-downloads-change", (event) => {
     const view = event.target;
     say(
-      `downloads count=${view.downloadCount} received=${view.downloadReceivedBytes} total=${view.downloadTotalBytes} completed=${view.downloadCompletedCount} paths=${view.downloadCompletedPaths.join(",")}`,
+      `downloads count=${view.downloadCount} received=${view.downloadReceivedBytes} total=${view.downloadTotalBytes} completed=${view.downloadCompletedCount} paths=${view.downloadCompletedPaths.join(",")} running=${view.downloadRunningPaths.join(",")}`,
     );
     if (view.downloadCount === 0 && view.downloadCompletedCount > 0) {
       view.removeCompletedDownload(view.downloadCompletedPaths[0]);

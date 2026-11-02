@@ -71,6 +71,7 @@ class CORE_EXPORT HTMLWebViewElement final
   void reload();
   void clearCompletedDownloads();
   void removeCompletedDownload(const String& path);
+  void cancelDownload(const String& path);
 
   // Whether goBack() and goForward() would navigate, for graying out buttons.
   //
@@ -101,6 +102,15 @@ class CORE_EXPORT HTMLWebViewElement final
   }
   const Vector<String>& downloadCompletedPaths() const {
     return download_completed_paths_;
+  }
+  const Vector<String>& downloadRunningPaths() const {
+    return download_running_paths_;
+  }
+  const Vector<int64_t>& downloadRunningReceivedBytes() const {
+    return download_running_received_bytes_;
+  }
+  const Vector<int64_t>& downloadRunningTotalBytes() const {
+    return download_running_total_bytes_;
   }
 
   // The page's current URL and security level, for an address bar. Both come
@@ -282,10 +292,12 @@ class CORE_EXPORT HTMLWebViewElement final
   void HistoryChanged(bool can_go_back, bool can_go_forward) override;
   void LoadingChanged(bool is_loading) override;
   void LoadProgressChanged(double progress) override;
-  void DownloadsChanged(int32_t count,
-                        int64_t received_bytes,
-                        int64_t total_bytes,
-                        const Vector<String>& completed) override;
+  void DownloadsChanged(
+      int32_t count,
+      int64_t received_bytes,
+      int64_t total_bytes,
+      Vector<domicile::mojom::blink::WebViewRunningDownloadPtr> running,
+      const Vector<String>& completed) override;
   void PageChanged(const KURL& url,
                    domicile::mojom::blink::WebViewSecurity security) override;
 
@@ -423,6 +435,9 @@ class CORE_EXPORT HTMLWebViewElement final
   int64_t download_received_bytes_ = 0;
   int64_t download_total_bytes_ = 0;
   Vector<String> download_completed_paths_;
+  Vector<String> download_running_paths_;
+  Vector<int64_t> download_running_received_bytes_;
+  Vector<int64_t> download_running_total_bytes_;
   String url_;
   String security_;
   double zoom_ = 1.0;

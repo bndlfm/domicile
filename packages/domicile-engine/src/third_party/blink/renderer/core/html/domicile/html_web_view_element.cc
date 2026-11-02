@@ -468,6 +468,12 @@ void HTMLWebViewElement::removeCompletedDownload(const String& path) {
   }
 }
 
+void HTMLWebViewElement::cancelDownload(const String& path) {
+  if (guest_.is_bound()) {
+    guest_->CancelDownload(path);
+  }
+}
+
 // Does not set `zoom_`: the browser's result may differ (e.g. another window
 // on the site zooms), so only ZoomChanged updates it.
 void HTMLWebViewElement::setZoom(double factor,
@@ -720,13 +726,23 @@ void HTMLWebViewElement::LoadProgressChanged(double progress) {
   DispatchEvent(*Event::CreateBubble(AtomicString(kLoadProgressChangeEvent)));
 }
 
-void HTMLWebViewElement::DownloadsChanged(int32_t count,
-                                          int64_t received_bytes,
-                                          int64_t total_bytes,
-                                          const Vector<String>& completed) {
+void HTMLWebViewElement::DownloadsChanged(
+    int32_t count,
+    int64_t received_bytes,
+    int64_t total_bytes,
+    Vector<domicile::mojom::blink::WebViewRunningDownloadPtr> running,
+    const Vector<String>& completed) {
   download_count_ = count;
   download_received_bytes_ = received_bytes;
   download_total_bytes_ = total_bytes;
+  download_running_paths_.clear();
+  download_running_received_bytes_.clear();
+  download_running_total_bytes_.clear();
+  for (const auto& download : running) {
+    download_running_paths_.push_back(download->path);
+    download_running_received_bytes_.push_back(download->received_bytes);
+    download_running_total_bytes_.push_back(download->total_bytes);
+  }
   download_completed_paths_ = completed;
 
   DispatchEvent(*Event::CreateBubble(AtomicString(kDownloadsChangeEvent)));

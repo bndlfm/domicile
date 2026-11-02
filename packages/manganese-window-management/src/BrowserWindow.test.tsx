@@ -139,6 +139,25 @@ const downloads = (
 };
 
 /**
+ * Fires a downloads change with one download in progress, saved at `path`,
+ * listed one by one as the engine lists it.
+ */
+const startsADownload = (
+  element: HTMLWebViewElement,
+  path = "/home/me/Downloads/dataset.zip",
+): void => {
+  const lists = {
+    downloadRunningPaths: [path],
+    downloadRunningReceivedBytes: [4_200_000],
+    downloadRunningTotalBytes: [18_000_000],
+  };
+  for (const [name, value] of Object.entries(lists)) {
+    Object.defineProperty(element, name, { configurable: true, value });
+  }
+  downloads(element, 4_200_000, 18_000_000);
+};
+
+/**
  * Fires a downloads change with finished downloads saved at `paths` and none
  * in progress.
  */
@@ -1869,7 +1888,7 @@ describe("BrowserWindow", () => {
       expect(driven).toStrictEqual(["clear"]);
     });
 
-    describe("the finished downloads' popup", () => {
+    describe("the downloads' popup", () => {
       const renderLaunching = (launched: (readonly string[])[]) =>
         render(
           <BrowserWindow
@@ -1903,6 +1922,42 @@ describe("BrowserWindow", () => {
             window="1"
           />,
         );
+
+      it("lists a download in progress as it starts", async () => {
+        const { container } = renderLaunching([]);
+        // As the engine starts: nothing yet, so the start is a rise.
+        finishesADownload(view(container), []);
+        startsADownload(view(container));
+
+        expect(
+          await screen.findByRole("heading", {
+            name: "Downloading dataset.zip",
+          }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole("progressbar", { name: "dataset.zip" }),
+        ).toBeInTheDocument();
+      });
+
+      it("cancels a download in progress", async () => {
+        const canceled: string[] = [];
+        const { container } = renderLaunching([]);
+        Object.defineProperty(view(container), "cancelDownload", {
+          configurable: true,
+          value: (path: string) => {
+            canceled.push(path);
+          },
+        });
+        // As the engine starts: nothing yet, so the start is a rise.
+        finishesADownload(view(container), []);
+        startsADownload(view(container));
+
+        await userEvent.click(
+          await screen.findByRole("button", { name: "Cancel" }),
+        );
+
+        expect(canceled).toStrictEqual(["/home/me/Downloads/dataset.zip"]);
+      });
 
       it("opens a finished file with its default application", async () => {
         const launched: (readonly string[])[] = [];
