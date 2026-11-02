@@ -527,8 +527,10 @@ void ControlChannel::SyncFrames() {
 // that scans out it is a cursor plane, and the compositor has never heard of
 // it. So this goes up to the UI thread and no further, which is the same shape
 // `GrabShortcut` has for the same kind of reason.
-void ControlChannel::WarpPointer(double x, double y) {
-  warp_sink_.Run(x, y);
+void ControlChannel::WarpPointer(double x,
+                                 double y,
+                                 const std::optional<gfx::RectF>& unless_over) {
+  warp_sink_.Run(x, y, unless_over);
 }
 
 void ControlChannel::CloseApp(const std::string& app_id) {

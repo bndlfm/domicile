@@ -12,6 +12,7 @@
 #include "base/check.h"
 #include "base/logging.h"
 #include "components/domicile/browser/desk_geometry.h"
+#include "components/domicile/browser/desk_pointer.h"
 #include "components/domicile/browser/pointer_warp.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/domicile_desk.h"
@@ -66,8 +67,16 @@ void DrawForWhereItLanded(aura::Window* root, const gfx::Point& at) {
 
 void WarpPointerIn(content::GlobalRenderFrameHostId frame_id,
                    double x,
-                   double y) {
+                   double y,
+                   const std::optional<gfx::RectF>& unless_over) {
   CHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  // The shell cannot see the pointer over a browser window's page; this
+  // process can. `DeskPointer` is in the shell page's CSS pixels, as the box
+  // is.
+  if (unless_over.has_value() &&
+      PointerAlreadyOver(DeskPointer::Get().Now().at, *unless_over)) {
+    return;
+  }
   content::RenderFrameHost* frame =
       content::RenderFrameHost::FromID(frame_id);
   // The frame closed before this ran, for example on reload or unplug.

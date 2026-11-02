@@ -630,8 +630,12 @@ export type DomicileHost = {
    * Doubles because a place in a page is a CSS pixel, which is fractional. A
    * coordinate outside this page is clamped to its own box -- what a page may
    * move is the pointer over itself -- and NaN throws.
+   *
+   * `unlessOver`, a box in the same coordinates, skips the warp while the
+   * pointer is over it. The page cannot see the pointer over a browser
+   * window's page; the browser process can.
    */
-  warpPointer(x: number, y: number): void;
+  warpPointer(x: number, y: number, unlessOver?: DOMRectReadOnly | null): void;
   /**
    * Ask a client to close. Not a kill -- the client decides, which is why a
    * window can refuse and show a save dialog instead.

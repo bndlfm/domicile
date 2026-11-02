@@ -3808,7 +3808,7 @@ describe("Shell", () => {
 
       clientAppears("three");
 
-      expect(domicile.calls).toContainEqual(["warpPointer", 1594, 566]);
+      expect(warpedTo()).toStrictEqual([1594, 566]);
       expect(boxOf(appBox(container, "three"))).toMatchObject({
         height: "989px",
         width: "613px",
@@ -3830,7 +3830,7 @@ describe("Shell", () => {
       press("h");
 
       expect(domicile.calls).toContainEqual(["focusApp", "one"]);
-      expect(domicile.calls).toContainEqual(["warpPointer", 485, 566]);
+      expect(warpedTo()).toStrictEqual([485, 566]);
       expect(boxOf(appBox(container, "one"))).toMatchObject({
         height: "989px",
         width: "930px",
@@ -3848,7 +3848,7 @@ describe("Shell", () => {
 
       press("l");
 
-      expect(domicile.calls).toContainEqual(["warpPointer", 2560, 512]);
+      expect(warpedTo()).toStrictEqual([2560, 512]);
     });
 
     it("gives the keyboard to the window the pointer moves into", () => {

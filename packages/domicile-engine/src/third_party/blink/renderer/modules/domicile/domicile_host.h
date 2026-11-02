@@ -42,6 +42,7 @@ namespace blink {
 template <typename IDLType>
 class FrozenArray;
 
+class DOMRectReadOnly;
 class DomicileBrowserWindow;
 class DomicileCastSink;
 class DomicileDisplay;
@@ -150,7 +151,11 @@ class MODULES_EXPORT DomicileHost final
   void focusApp(ScriptState*, const String& app_id, ExceptionState&);
   void focusChrome(ScriptState*, ExceptionState&);
   void syncFrames(ScriptState*, ExceptionState&);
-  void warpPointer(ScriptState*, double x, double y, ExceptionState&);
+  void warpPointer(ScriptState*,
+                   double x,
+                   double y,
+                   DOMRectReadOnly* unless_over,
+                   ExceptionState&);
   void closeApp(ScriptState*, const String& app_id, ExceptionState&);
   void setAppBounds(ScriptState*,
                     const String& app_id,

@@ -1,18 +1,34 @@
 // The pointer, which the browser owns.
 
 import type { DomicileHost } from "../domicile-host";
+import type { Box } from "./windows";
 
 export type Pointer = {
   /**
    * Put the pointer at a place in the page, in `clientX`/`clientY`
    * coordinates, as focus that follows the pointer needs. Clamped to the
    * page's box; NaN throws.
+   *
+   * With `unlessOver`, a box in the same coordinates, the pointer stays put
+   * while it is over that box. The engine decides, since the page cannot see
+   * the pointer move over a browser window's page.
    */
-  warp: (x: number, y: number) => void;
+  warp: (x: number, y: number, unlessOver?: Box) => void;
 };
 
 export const pointer = (host: Pick<DomicileHost, "warpPointer">): Pointer => ({
-  warp: (x, y) => {
-    host.warpPointer(x, y);
+  warp: (x, y, unlessOver) => {
+    host.warpPointer(
+      x,
+      y,
+      unlessOver === undefined
+        ? undefined
+        : new DOMRectReadOnly(
+            unlessOver.x,
+            unlessOver.y,
+            unlessOver.width,
+            unlessOver.height,
+          ),
+    );
   },
 });

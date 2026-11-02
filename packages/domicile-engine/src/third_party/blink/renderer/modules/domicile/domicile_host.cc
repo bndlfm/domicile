@@ -15,6 +15,7 @@
 #include "base/functional/callback_helpers.h"
 #include "base/notreached.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
+#include "ui/gfx/geometry/rect_f.h"
 #include "components/domicile/common/cursor_shape.h"
 #include "components/domicile/common/display_transform.h"
 #include "components/domicile/common/theme.h"
@@ -35,6 +36,7 @@
 #include "third_party/blink/renderer/core/dom/events/custom_event.h"
 #include "third_party/blink/renderer/core/dom/events/native_event_listener.h"
 #include "third_party/blink/renderer/core/events/keyboard_event.h"
+#include "third_party/blink/renderer/core/geometry/dom_rect_read_only.h"
 #include "third_party/blink/renderer/core/inspector/console_message.h"
 #include "third_party/blink/renderer/core/event_target_names.h"
 #include "third_party/blink/renderer/core/event_type_names.h"
@@ -538,7 +540,10 @@ void DomicileHost::syncFrames(ScriptState*, ExceptionState& exception_state) {
   }
 }
 
-void DomicileHost::warpPointer(ScriptState*, double x, double y,
+void DomicileHost::warpPointer(ScriptState*,
+                               double x,
+                               double y,
+                               DOMRectReadOnly* unless_over,
                                ExceptionState& exception_state) {
   // A coordinate that is not a number is not a place, and every arithmetic
   // that follows it -- the browser's clamp into this page's box, the round to
@@ -552,8 +557,23 @@ void DomicileHost::warpPointer(ScriptState*, double x, double y,
     exception_state.ThrowTypeError("warpPointer: x and y must be finite");
     return;
   }
+  // A box with a NaN edge holds no point, so the warp would always happen.
+  if (unless_over != nullptr &&
+      (!std::isfinite(unless_over->x()) || !std::isfinite(unless_over->y()) ||
+       !std::isfinite(unless_over->width()) ||
+       !std::isfinite(unless_over->height()))) {
+    exception_state.ThrowTypeError("warpPointer: unlessOver must be finite");
+    return;
+  }
   if (Ready(exception_state)) {
-    channel_->WarpPointer(x, y);
+    channel_->WarpPointer(
+        x, y,
+        unless_over == nullptr
+            ? std::nullopt
+            : std::make_optional(gfx::RectF(
+                  unless_over->left(), unless_over->top(),
+                  unless_over->right() - unless_over->left(),
+                  unless_over->bottom() - unless_over->top())));
   }
 }
 

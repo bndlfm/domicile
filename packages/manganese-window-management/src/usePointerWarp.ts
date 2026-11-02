@@ -9,8 +9,9 @@ import type { WindowState } from "./window-state";
 /**
  * The most pending warp targets kept.
  *
- * Only warps that never report a landing pile up: the engine declined them,
- * or the pointer landed in a guest page whose events this shell cannot see.
+ * Only warps that never report a landing pile up: the engine declined them or
+ * left the pointer over the new window, or the pointer landed in a guest page
+ * whose events this shell cannot see.
  * Dropping the oldest means a late landing there reads as a user move.
  */
 const IN_FLIGHT = 4;
@@ -151,21 +152,22 @@ export const usePointerWarp = ({
       !sameBox(was.box, focus?.box);
     const keyed = pressed !== answered.current;
     answered.current = pressed;
-    // The pending target, if any, so a second press before the first warp
+    // The pending target, if any, so a window opened before the last warp
     // lands is measured from where the cursor is going.
     const at = sent.current.at(-1) ?? pointer.current;
-    const to =
+    const warp =
       keyed || gone || (opened && overAnother(shown, focus, at))
-        ? warpTo({ from: was, pointer: at, to: focus })
+        ? warpTo({ from: was, to: focus })
         : undefined;
     held.current = focus;
     open.current = windows;
-    if (to !== undefined) {
-      // Record it now: the engine does not report when the warp lands.
+    if (warp !== undefined) {
+      // Record it now: the engine does not report when the warp lands, or
+      // that it stayed put over `unlessOver`.
       // Keep duplicates in order: a spot sent twice is landed on twice, and
       // folding them would let the first landing clear both.
-      sent.current = [...sent.current, to].slice(-IN_FLIGHT);
-      domicile.pointer.warp(to[0], to[1]);
+      sent.current = [...sent.current, warp.to].slice(-IN_FLIGHT);
+      domicile.pointer.warp(warp.to[0], warp.to[1], warp.unlessOver);
     }
   }, [domicile, focus, pressed, shown, windows]);
 

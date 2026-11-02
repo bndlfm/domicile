@@ -108,7 +108,8 @@ The pointer follows keyboard focus (sway's `mouse_warping container`):
   title bar included, once the layout settles. A window that slides in under
   the pointer, such as a neighbor filling a closed window's space, leaves it
   where it is. `warpTo` in `src/pointer-warp.ts` holds this rule for every
-  focus change below.
+  focus change below. The engine checks where the pointer is, since the shell
+  cannot see it move over a browser window's page.
 - A keyed focus change, or a granted focus request, warps the pointer to the
   center of the new window's contents. An empty screen warps to its center.
 - A window that opens with the keyboard also warps the pointer, but only when

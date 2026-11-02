@@ -16,9 +16,16 @@ const RIGHT = {
 
 describe("warpTo", () => {
   it("takes the pointer to the middle of the window the keyboard moved to", () => {
-    expect(
-      warpTo({ from: LEFT, pointer: [200, 300], to: RIGHT }),
-    ).toStrictEqual([600, 350]);
+    expect(warpTo({ from: LEFT, to: RIGHT })?.to).toStrictEqual([600, 350]);
+  });
+
+  it("leaves it over anywhere on that window, title bar included", () => {
+    // The engine decides, since the page cannot see the pointer over a
+    // browser window's page. Closing a group's last tab from its strip slides
+    // the neighbor's strip under the pointer, which then stays put.
+    expect(warpTo({ from: LEFT, to: RIGHT })?.unlessOver).toStrictEqual(
+      RIGHT.frame,
+    );
   });
 
   it("asks for a whole pixel, which is what the engine will give", () => {
@@ -27,59 +34,23 @@ describe("warpTo", () => {
     const box = { height: 501, width: 401, x: 0, y: 0 };
     const odd = { box, frame: box, id: "kitty" };
 
-    expect(warpTo({ from: LEFT, pointer: [900, 900], to: odd })).toStrictEqual([
-      201, 251,
-    ]);
-  });
-
-  it("takes it there when the pointer has never been anywhere", () => {
-    // The page has not seen the pointer yet, so it warps anyway.
-    expect(
-      warpTo({ from: undefined, pointer: undefined, to: LEFT }),
-    ).toStrictEqual([200, 350]);
+    expect(warpTo({ from: LEFT, to: odd })?.to).toStrictEqual([201, 251]);
   });
 
   it("follows the window when the window is what moved", () => {
     // `mod+shift+l` moves the same window; the pointer is now over whatever
     // took its place.
     expect(
-      warpTo({
-        from: LEFT,
-        pointer: [200, 300],
-        to: { ...RIGHT, id: "kitty" },
-      }),
+      warpTo({ from: LEFT, to: { ...RIGHT, id: "kitty" } })?.to,
     ).toStrictEqual([600, 350]);
-  });
-
-  it("leaves the pointer alone when it is already over that window", () => {
-    // Switching tabs keeps the same box, so there is nothing to warp to.
-    expect(
-      warpTo({
-        from: LEFT,
-        pointer: [200, 300],
-        to: { ...LEFT, id: "emacs" },
-      }),
-    ).toBeUndefined();
-  });
-
-  it("leaves it alone over that window's title bar", () => {
-    // Closing a group's last tab from its strip slides the neighbor's strip
-    // under the pointer. The pointer is already on the window it focuses.
-    expect(
-      warpTo({ from: LEFT, pointer: [600, 80], to: RIGHT }),
-    ).toBeUndefined();
   });
 
   it("leaves it alone when the keyboard did not move", () => {
     // Keys that do not move the focus, such as a split, leave the pointer.
-    expect(
-      warpTo({ from: LEFT, pointer: [900, 900], to: LEFT }),
-    ).toBeUndefined();
+    expect(warpTo({ from: LEFT, to: LEFT })).toBeUndefined();
   });
 
   it("has nowhere to put it on an empty workspace", () => {
-    expect(
-      warpTo({ from: LEFT, pointer: [200, 300], to: undefined }),
-    ).toBeUndefined();
+    expect(warpTo({ from: LEFT, to: undefined })).toBeUndefined();
   });
 });

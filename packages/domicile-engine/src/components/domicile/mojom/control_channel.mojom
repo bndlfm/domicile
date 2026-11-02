@@ -3,6 +3,8 @@
 
 module domicile.mojom;
 
+import "ui/gfx/geometry/mojom/geometry.mojom";
+
 
 // The shell's control channel to the compositor, as a renderer-to-browser
 // interface rather than a socket the page opens.
@@ -414,7 +416,11 @@ interface ControlChannel {
   // a page can read where the pointer is and cannot put it anywhere, so it
   // asks. What a page may move is the pointer over itself, which is
   // `PointerWarpTarget`'s to enforce and not this channel's to promise.
-  WarpPointer(double x, double y);
+  //
+  // `unless_over`, in the page's coordinates, skips the warp while the pointer
+  // is over it. The page cannot see the pointer over a browser window's page;
+  // this process can. See `PointerAlreadyOver`.
+  WarpPointer(double x, double y, gfx.mojom.RectF? unless_over);
 
   // Input forwarding. Coordinates are surface-local and keycodes are evdev,
   // because that is what a Wayland client expects to be handed.

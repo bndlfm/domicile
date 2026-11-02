@@ -8,7 +8,9 @@
 
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/gfx/geometry/point.h"
+#include "ui/gfx/geometry/point_f.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/geometry/rect_f.h"
 
 namespace domicile {
 namespace {
@@ -49,6 +51,29 @@ TEST(PointerWarpTest, APageWithNoBoxHasNowhereToPutIt) {
   // A window not yet laid out. Clamping would return a corner the page does
   // not occupy.
   EXPECT_EQ(PointerWarpTarget(gfx::Rect(), 0, 0), std::nullopt);
+}
+
+// A window's frame in the page, title bar included.
+constexpr gfx::RectF kFrame(100, 70, 400, 530);
+
+TEST(PointerWarpTest, APointerOverTheBoxStaysPut) {
+  EXPECT_TRUE(PointerAlreadyOver(gfx::PointF(300, 80), kFrame));
+}
+
+TEST(PointerWarpTest, EdgesAreInTheBox) {
+  // The shell counts its own edges as inside; the two must agree.
+  EXPECT_TRUE(PointerAlreadyOver(gfx::PointF(500, 600), kFrame));
+  EXPECT_TRUE(PointerAlreadyOver(gfx::PointF(100, 70), kFrame));
+}
+
+TEST(PointerWarpTest, APointerElsewhereMoves) {
+  EXPECT_FALSE(PointerAlreadyOver(gfx::PointF(501, 300), kFrame));
+  EXPECT_FALSE(PointerAlreadyOver(gfx::PointF(300, 69), kFrame));
+}
+
+TEST(PointerWarpTest, APointerOffThePageMoves) {
+  // The pointer is on no shell, so nothing says it is over the box.
+  EXPECT_FALSE(PointerAlreadyOver(std::nullopt, kFrame));
 }
 
 }  // namespace

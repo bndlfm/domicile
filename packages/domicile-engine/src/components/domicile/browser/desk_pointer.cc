@@ -33,6 +33,11 @@ void DeskPointer::RemoveListener(ListenerId listener) {
   });
 }
 
+DeskPointerAt DeskPointer::Now() {
+  base::AutoLock held(lock_);
+  return at_;
+}
+
 void DeskPointer::MovedTo(const DeskPointerAt& at) {
   // Run outside the lock, since a callback may re-enter this.
   std::vector<Moved> tell;
