@@ -48,7 +48,6 @@ run_block() { # $1 NEGATIVE, then NAME=value overrides
   SAVED_ANYWHERE=1
   SAW_GUEST_COUNTED=1
   SAW_COUNTED=1
-  SAW_CLEARED=1
   SAW_FINISHED=1
   SAW_FORGOTTEN=1
   NEGATIVE="$1"
@@ -82,7 +81,7 @@ blames() { # $1 word, then the args verdict takes
 }
 
 # The control's readings: the shell canceled, so nothing was saved.
-CONTROL="SAVED=0 SAVED_ANYWHERE=0 SAW_GUEST_COUNTED=0 SAW_COUNTED=0 SAW_CLEARED=0 SAW_FINISHED=0 SAW_FORGOTTEN=0"
+CONTROL="SAVED=0 SAVED_ANYWHERE=0 SAW_GUEST_COUNTED=0 SAW_COUNTED=0 SAW_FINISHED=0 SAW_FORGOTTEN=0"
 
 echo "a run that never got as far as measuring anything"
 # shellcheck disable=SC2086
@@ -121,20 +120,18 @@ expect "no file at all is a failure" "fail" \
 
 echo
 echo "the progress the shell was shown"
-expect "a download the guest never counted names ReportDownloads" "yes" \
-  "$(blames "ReportDownloads" 0 SAW_GUEST_COUNTED=0 SAW_COUNTED=0)"
-expect "a count the shell never heard names the element" "yes" \
-  "$(blames "HTMLWebViewElement" 0 SAW_COUNTED=0)"
-expect "a download still counted once saved is a failure" "fail" \
-  "$(verdict 0 SAW_CLEARED=0)"
-expect "a download still counted once saved says so" "yes" \
-  "$(blames "STILL IN PROGRESS" 0 SAW_CLEARED=0)"
-expect "a finished download not kept as finished says so" "yes" \
-  "$(blames "NOT KEPT" 0 SAW_FINISHED=0 SAW_FORGOTTEN=0)"
+expect "a download the desk never listed names DeskDownloads::Add" "yes" \
+  "$(blames "DeskDownloads::Add" 0 SAW_GUEST_COUNTED=0 SAW_COUNTED=0)"
+expect "a download the shell never heard names the client" "yes" \
+  "$(blames "DownloadsClient" 0 SAW_COUNTED=0)"
+expect "a finished download not listed as finished is a failure" "fail" \
+  "$(verdict 0 SAW_FINISHED=0 SAW_FORGOTTEN=0)"
+expect "a finished download not listed as finished says so" "yes" \
+  "$(blames "NOT LISTED" 0 SAW_FINISHED=0 SAW_FORGOTTEN=0)"
 expect "a finished download the shell could not remove is a failure" "fail" \
   "$(verdict 0 SAW_FORGOTTEN=0)"
 expect "a finished download the shell could not remove names the call" "yes" \
-  "$(blames "removeCompletedDownload" 0 SAW_FORGOTTEN=0)"
+  "$(blames "removeDownload" 0 SAW_FORGOTTEN=0)"
 
 echo
 echo "the control run — a shell that cancels"
@@ -144,10 +141,10 @@ expect "nothing on the disk is the pass" "pass" "$(verdict 1 $CONTROL)"
 expect "a file after a cancel is the failure" "fail" \
   "$(verdict 1 $CONTROL SAVED_ANYWHERE=1)"
 # shellcheck disable=SC2086
-expect "a canceled download counted as in progress is a failure" "fail" \
+expect "a canceled download listed as in progress is a failure" "fail" \
   "$(verdict 1 $CONTROL SAW_COUNTED=1)"
 # shellcheck disable=SC2086
-expect "a canceled download counted as finished is a failure" "fail" \
+expect "a canceled download listed as finished is a failure" "fail" \
   "$(verdict 1 $CONTROL SAW_FINISHED=1)"
 
 echo

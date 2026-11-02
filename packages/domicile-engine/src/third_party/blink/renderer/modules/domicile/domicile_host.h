@@ -11,6 +11,7 @@
 #include "components/domicile/mojom/browser_windows.mojom-blink.h"
 #include "components/domicile/mojom/cast_sinks.mojom-blink.h"
 #include "components/domicile/mojom/control_channel.mojom-blink.h"
+#include "components/domicile/mojom/downloads.mojom-blink.h"
 #include "components/domicile/mojom/extension_tray.mojom-blink.h"
 #include "components/domicile/mojom/shell_fetch.mojom-blink.h"
 #include "third_party/blink/renderer/modules/domicile/domicile_chord.h"
@@ -44,6 +45,7 @@ class FrozenArray;
 class DomicileBrowserWindow;
 class DomicileCastSink;
 class DomicileDisplay;
+class DomicileDownload;
 class DomicileClipboardEntry;
 class DomicileTrayItem;
 class DomicileNotification;
@@ -80,6 +82,7 @@ class MODULES_EXPORT DomicileHost final
       public domicile::mojom::blink::ExtensionTrayClient,
       public domicile::mojom::blink::BrowserWindowsClient,
       public domicile::mojom::blink::CastSinksClient,
+      public domicile::mojom::blink::DownloadsClient,
       public AppInputClient {
   DEFINE_WRAPPERTYPEINFO();
 
@@ -240,6 +243,16 @@ class MODULES_EXPORT DomicileHost final
                                         const String& id,
                                         ExceptionState&);
   void stopCasting(ScriptState*, const String& route, ExceptionState&);
+
+  // The desk's downloads, or null until the browser has listed them.
+  const FrozenArray<DomicileDownload>* downloads() const {
+    return downloads_.Get();
+  }
+
+  // Cancel or remove downloads. The next `downloadschanged` reflects it.
+  void cancelDownload(ScriptState*, const String& id, ExceptionState&);
+  void removeDownload(ScriptState*, const String& id, ExceptionState&);
+  void clearDownloads(ScriptState*, ExceptionState&);
   // Sends `method` to `url` with the profile's cookies, through the browser's
   // own pipe.
   // The browser refuses what the page may not send; see the IDL.
@@ -353,6 +366,10 @@ class MODULES_EXPORT DomicileHost final
   // domicile::mojom::blink::CastSinksClient:
   void SinksChanged(
       Vector<domicile::mojom::blink::CastSinkPtr> sinks) override;
+
+  // domicile::mojom::blink::DownloadsClient:
+  void DownloadsChanged(
+      Vector<domicile::mojom::blink::DownloadPtr> downloads) override;
 
   void Trace(Visitor*) const override;
 
@@ -527,6 +544,8 @@ class MODULES_EXPORT DomicileHost final
   Member<FrozenArray<DomicileBrowserWindow>> browser_windows_;
   // And `cast_sinks_`, for the same reason.
   Member<FrozenArray<DomicileCastSink>> cast_sinks_;
+  // And `downloads_`.
+  Member<FrozenArray<DomicileDownload>> downloads_;
   HeapMojoRemote<domicile::mojom::blink::ControlChannel> channel_;
   HeapMojoReceiver<domicile::mojom::blink::ControlChannelClient, DomicileHost>
       client_receiver_;
@@ -548,6 +567,10 @@ class MODULES_EXPORT DomicileHost final
   HeapMojoRemote<domicile::mojom::blink::CastSinks> cast_;
   HeapMojoReceiver<domicile::mojom::blink::CastSinksClient, DomicileHost>
       cast_receiver_;
+  // The downloads' pipe, the browser's own too, bound beside the TVs.
+  HeapMojoRemote<domicile::mojom::blink::Downloads> downloads_remote_;
+  HeapMojoReceiver<domicile::mojom::blink::DownloadsClient, DomicileHost>
+      downloads_receiver_;
   // The fetches with the profile's cookies, the browser's own pipe too. Bound
   // on the first fetch, since nothing arrives on it unasked.
   HeapMojoRemote<domicile::mojom::blink::ShellFetch> shell_fetch_;

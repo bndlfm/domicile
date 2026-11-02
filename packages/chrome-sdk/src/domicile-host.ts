@@ -62,6 +62,14 @@ export type DomicileCursorShape =
   | "zoom-out";
 
 /**
+ * One of the desk's downloads. See components/domicile/mojom/downloads.mojom.
+ *
+ * An interface for DomicileBrowserWindow's reason: these are read from the
+ * desktop's `downloads` attribute.
+ */
+export type DomicileDownloadState = "in-progress" | "complete" | "failed";
+
+/**
  * The desktop's light or dark theme.
  *
  * One of four copies of this set: `domicile_protocol::Theme`,
@@ -354,6 +362,24 @@ export type DomicileDisplay = {
   readonly transform: string;
 };
 
+export type DomicileDownload = {
+  /** The id cancelDownload() and removeDownload() take. */
+  readonly id: string;
+  readonly state: DomicileDownloadState;
+  /** Where it is saved. */
+  readonly path: string;
+  readonly receivedBytes: number;
+  /** 0 when the server sent no size. */
+  readonly totalBytes: number;
+  /**
+   * The browser window whose page started it, as a DomicileBrowserWindow's
+   * `id`; empty for a <webview> that is not one. It may have closed since.
+   */
+  readonly window: string;
+  /** The address of the page that started it. */
+  readonly page: string;
+};
+
 /**
  * One extension with an action, as a shell's tray draws it.
  *
@@ -442,6 +468,11 @@ export type DomicileHostEventMap = {
    * `castSinks` for the current list.
    */
   castsinkschanged: Event;
+  /**
+   * Fires when a download starts, progresses, finishes, fails, or leaves the
+   * list. Read `downloads` for the current list.
+   */
+  downloadschanged: Event;
   /**
    * An answer to callSystem(), as a MessageEvent whose `data` is the
    * compositor's `system_reply`, `system_event` or `system_end` line.
@@ -728,6 +759,18 @@ export type DomicileHost = {
    */
   stopCasting(route: string): void;
   /**
+   * Cancels download `id`; it leaves the next `downloadschanged`. An unknown
+   * id, or one no longer in progress, does nothing.
+   */
+  cancelDownload(id: string): void;
+  /**
+   * Removes download `id` from `downloads`. The file stays. A download in
+   * progress, or an unknown id, does nothing.
+   */
+  removeDownload(id: string): void;
+  /** Removes every download not in progress from `downloads`. The files stay. */
+  clearDownloads(): void;
+  /**
    * Sends `method`, "GET" or "POST", to `url` from the browser process with
    * the cookies of the profile the ordinary browser windows use, so a bar
    * item can read a site the user is signed in to. A POST sends `body`, as a
@@ -839,6 +882,14 @@ export type DomicileHost = {
    * components/domicile/mojom/cast_sinks.mojom.
    */
   readonly castSinks: readonly DomicileCastSink[] | null;
+  /**
+   * The desk's downloads, oldest first: each one a browser window's page
+   * started while the browser runs, until removeDownload() or
+   * clearDownloads(). Null until the browser lists them, which it does as soon
+   * as this page listens. No [SameObject], for `displays`' reason. See
+   * components/domicile/mojom/downloads.mojom.
+   */
+  readonly downloads: readonly DomicileDownload[] | null;
   /**
    * Typed by the event map rather than by inheriting `EventTarget`, whose
    * overloads take any name and type every listener's event as `Event`.

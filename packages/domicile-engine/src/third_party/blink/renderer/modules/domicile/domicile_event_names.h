@@ -28,6 +28,7 @@
   X(displayschanged, Displayschanged)             \
   X(browserwindowschanged, Browserwindowschanged) \
   X(castsinkschanged, Castsinkschanged)           \
+  X(downloadschanged, Downloadschanged)           \
   X(windowschanged, Windowschanged)               \
   X(focusedwindowchanged, Focusedwindowchanged)   \
   X(clipboardchanged, Clipboardchanged)           \
