@@ -24,7 +24,6 @@ import { AddressBar } from "./browser/AddressBar";
 import { AppAddress } from "./browser/AppAddress";
 import { leftOrigin } from "./browser/app-origin";
 import { BrowserCommand, browserCommandFor } from "./browser/browser-command";
-import { DownloadsPanel } from "./browser/DownloadsPanel";
 import { FindBar } from "./browser/FindBar";
 import { LinkTarget } from "./browser/LinkTarget";
 import { mediaDeviceChoiceFor } from "./browser/media-devices";
@@ -33,14 +32,12 @@ import { PagePopup } from "./browser/PagePopup";
 import { choosePageCommand, pageMenuFor } from "./browser/page-menu";
 import { useFileRequest } from "./browser/useFileRequest";
 import { usePageMenu } from "./browser/usePageMenu";
-import { PagePopupKind, usePagePopup } from "./browser/usePagePopup";
 import { useSitePermissions } from "./browser/useSitePermissions";
+import { useZoomPopup } from "./browser/useZoomPopup";
 import { ZoomPanel } from "./browser/ZoomPanel";
 import { zoomedIn, zoomedOut } from "./browser/zoom-steps";
-import { openCommand } from "./open-command";
 import type { Rect } from "./rect";
 import type { Restack } from "./restacking";
-import { useDownloads } from "./useDownloads";
 import { useHistoryAvailability } from "./useHistoryAvailability";
 import { useLoading } from "./useLoading";
 import { useLoadProgress } from "./useLoadProgress";
@@ -266,21 +263,17 @@ export const BrowserWindow = ({
   const { canGoBack, canGoForward } = useHistoryAvailability(view);
   const loading = useLoading(view);
   const loadProgress = useLoadProgress(view);
-  const downloads = useDownloads(view);
-  // The popup over the page: its zoom, or its finished downloads. Only while
-  // the page is in front, so it never sits over another window.
+  // The zoom popup over the page. Only while the page is in front, so it
+  // never sits over another window.
   const {
     close: closePopup,
     cue: popupCue,
-    kind: popupKind,
+    open: zoomShown,
     show: showPopup,
-  } = usePagePopup(downloads.completed, holdsKeyboard && !covered);
-  // What the popups hang from: the address bar's controls, or the page's
+  } = useZoomPopup(holdsKeyboard && !covered);
+  // What the popup hangs from: the address bar's zoom control, or the page's
   // corner in a window without one.
   const [zoomAnchor, setZoomAnchor] = useState<HTMLElement | null>(null);
-  const [downloadsAnchor, setDownloadsAnchor] = useState<HTMLElement | null>(
-    null,
-  );
   const [cornerAnchor, setCornerAnchor] = useState<HTMLElement | null>(null);
   const zoom = useZoom(view);
   // A fullscreen page, such as a video, fills the window without its bar.
@@ -428,17 +421,17 @@ export const BrowserWindow = ({
           }
           case BrowserCommand.ZoomIn: {
             view.setZoom(zoomedIn(view.zoom));
-            showPopup(PagePopupKind.Zoom);
+            showPopup();
             break;
           }
           case BrowserCommand.ZoomOut: {
             view.setZoom(zoomedOut(view.zoom));
-            showPopup(PagePopupKind.Zoom);
+            showPopup();
             break;
           }
           case BrowserCommand.ZoomReset: {
             view.setZoom(1);
-            showPopup(PagePopupKind.Zoom);
+            showPopup();
             break;
           }
         }
@@ -556,11 +549,7 @@ export const BrowserWindow = ({
     withView(command);
   };
 
-  const clearDownloads = drive((loaded) => {
-    loaded.clearCompletedDownloads();
-  });
-
-  // The popups hang from its controls when it shows.
+  // The zoom popup hangs from its control when it shows.
   const hasAddressBar = popupWindow === undefined && !isApp && !pageFullscreen;
 
   // Reports focus entering this window as a user reach.
@@ -655,8 +644,7 @@ export const BrowserWindow = ({
             address={address}
             canGoBack={canGoBack}
             canGoForward={canGoForward}
-            downloads={downloads}
-            holdZoom={popupKind === PagePopupKind.Zoom}
+            holdZoom={zoomShown}
             isPrivate={isPrivate}
             loading={loading}
             loadProgress={loadProgress}
@@ -664,8 +652,6 @@ export const BrowserWindow = ({
             onBack={drive((loaded) => {
               loaded.goBack();
             })}
-            onClearDownloads={clearDownloads}
-            onDownloadsAnchor={setDownloadsAnchor}
             onForward={drive((loaded) => {
               loaded.goForward();
             })}
@@ -677,9 +663,6 @@ export const BrowserWindow = ({
               withView((loaded) => {
                 loaded.setSitePermission(permission, setting);
               });
-            }}
-            onShowDownloads={() => {
-              showPopup(PagePopupKind.Downloads);
             }}
             onStop={drive((loaded) => {
               loaded.stop();
@@ -724,7 +707,7 @@ export const BrowserWindow = ({
             closesAfter={ZOOM_POPUP_MS}
             cue={popupCue}
             onClose={closePopup}
-            open={popupKind === PagePopupKind.Zoom}
+            open={zoomShown}
           >
             <ZoomPanel
               onZoomIn={() => {
@@ -737,42 +720,6 @@ export const BrowserWindow = ({
                 run(BrowserCommand.ZoomReset);
               }}
               zoom={zoom}
-            />
-          </PagePopup>
-          <PagePopup
-            anchor={hasAddressBar ? downloadsAnchor : cornerAnchor}
-            closesAfter={DOWNLOADS_POPUP_MS}
-            cue={popupCue}
-            onClose={closePopup}
-            open={
-              popupKind === PagePopupKind.Downloads && downloads.completed > 0
-            }
-          >
-            <DownloadsPanel
-              count={downloads.completed}
-              onClearAll={clearDownloads}
-              onOpen={(path) => {
-                domicile.processes.launch(openCommand(path));
-              }}
-              onRemove={(path) => {
-                withView((loaded) => {
-                  // The panel lists files only from an engine that lists
-                  // their paths, which can also remove one.
-                  if (loaded.removeCompletedDownload === undefined) {
-                    throw new Error(
-                      "browser window: the engine lists finished downloads but cannot remove one",
-                    );
-                  } else {
-                    loaded.removeCompletedDownload(path);
-                  }
-                });
-              }}
-              onShowInFolder={(path) => {
-                domicile.processes.launch(
-                  openCommand(path.slice(0, path.lastIndexOf("/"))),
-                );
-              }}
-              paths={downloads.completedPaths}
             />
           </PagePopup>
           {finding && (
@@ -875,12 +822,11 @@ const contentsStyles = flex({
 });
 
 // Fills the height below the address bar and positions the overlays.
-// How long the zoom and downloads popups stay up, as in Chrome: the zoom
-// briefly, since the page shows it; the downloads long enough to reach them.
+// How long the zoom popup stays up: briefly, as in Chrome, since the page
+// shows the zoom.
 const ZOOM_POPUP_MS = 2000;
-const DOWNLOADS_POPUP_MS = 5000;
 
-// The page's top trailing corner, for the popups to hang from without an
+// The page's top trailing corner, for the zoom popup to hang from without an
 // address bar.
 const cornerStyles = css({
   insetBlockStart: 0,

@@ -46,7 +46,8 @@ The engine has two channels to the rest of Domicile:
   windows, which the browser owns
   (`components/domicile/mojom/browser_windows.mojom`),
   `castsinkschanged`, the TVs the browser's Media Router finds
-  (`components/domicile/mojom/cast_sinks.mojom`), and
+  (`components/domicile/mojom/cast_sinks.mojom`), `downloadschanged`, the
+  desk's downloads (`components/domicile/mojom/downloads.mojom`), and
   `compositorreplaced` (below).
 
 ### Members with special handling

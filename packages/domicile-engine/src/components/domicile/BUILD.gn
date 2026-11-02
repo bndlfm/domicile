@@ -457,13 +457,33 @@ source_set("rtkit") {
   deps = [ "//dbus" ]
 }
 
-# A <webview>'s downloads added up for the element. Its own target beside
-# :web_view_guest for the reason :file_choice is one: it needs no browser,
-# which is where its tests are.
-source_set("download_tally") {
+# Which downloads the shell lists. Its own target beside :desk_downloads for
+# the reason :file_choice is one: it needs no browser, which is where its
+# tests are.
+source_set("download_list") {
   sources = [
-    "browser/download_tally.cc",
-    "browser/download_tally.h",
+    "browser/download_list.cc",
+    "browser/download_list.h",
+  ]
+}
+
+# The desk's downloads, kept after their window closes, for the shell's
+# Downloads pipe.
+source_set("desk_downloads") {
+  sources = [
+    "browser/desk_downloads.cc",
+    "browser/desk_downloads.h",
+  ]
+
+  public_deps = [
+    "//base",
+    "//components/domicile/mojom",
+    "//components/download/public/common:public",
+  ]
+
+  deps = [
+    ":download_list",
+    "//url",
   ]
 }
 
@@ -529,7 +549,7 @@ source_set("web_view_guest") {
 
   public_deps = [
     ":context_menu",
-    ":download_tally",
+    ":desk_downloads",
     ":file_choice",
     ":guest_dialogs",
     ":page_matches",
@@ -545,7 +565,7 @@ source_set("web_view_guest") {
     # PermissionsClient, which //components may reach.
     "//components/content_settings/core/browser",
     "//components/domicile/mojom",
-    # The page's downloads, for their progress.
+    # The page's downloads, for the desk's list.
     "//components/download/public/common:public",
     "//components/permissions",
     "//components/input",
@@ -1034,7 +1054,7 @@ source_set("unit_tests") {
     "browser/display_capture_target_unittest.cc",
     "browser/display_capture_unittest.cc",
     "browser/display_list_unittest.cc",
-    "browser/download_tally_unittest.cc",
+    "browser/download_list_unittest.cc",
     "browser/extension_installer_unittest.cc",
     "browser/extension_tray_entry_unittest.cc",
     "browser/force_dark_unittest.cc",
@@ -1107,7 +1127,7 @@ source_set("unit_tests") {
     ":device_choices",
     ":display_capture_target",
     ":display_transform",
-    ":download_tally",
+    ":download_list",
     ":extension_installer",
     ":extension_tray_entry",
     ":file_choice",
