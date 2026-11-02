@@ -41,6 +41,44 @@ run() { # name, command...
   verdict "$name" "$?" "$log"
 }
 
+# Runs checks up to `jobs` at a time. Each verdict prints once every check
+# before it has finished, so the report reads as a serial run's would.
+run_together() { # jobs, scripts...
+  local jobs="$1"; shift
+  local results; results="$(mktemp -d)"
+  local index=0 script
+  REPORTED=0
+  for script in "$@"; do
+    rm -f "$KEEP_LOGS/$(basename "$script" .sh).log"
+    while [ "$(jobs -rp | wc -l)" -ge "$jobs" ]; do
+      wait -n
+      report_finished "$results" "$@"
+    done
+    (
+      "$script" >"$results/$index.log" 2>&1
+      echo "$?" >"$results/$index.status.part"
+      mv "$results/$index.status.part" "$results/$index.status"
+    ) &
+    index=$((index + 1))
+  done
+  wait
+  report_finished "$results" "$@"
+  rm -rf "$results"
+}
+
+# Prints the verdicts of the finished checks from `REPORTED` on, stopping at
+# the first still running.
+report_finished() { # results directory, scripts...
+  local results="$1"; shift
+  local scripts=("$@") name
+  while [ "$REPORTED" -lt "${#scripts[@]}" ] && [ -f "$results/$REPORTED.status" ]; do
+    name="$(basename "${scripts[$REPORTED]}" .sh)"
+    label "$name"
+    verdict "$name" "$(cat "$results/$REPORTED.status")" "$results/$REPORTED.log"
+    REPORTED=$((REPORTED + 1))
+  done
+}
+
 # Prints the verdict of a check whose name `label` already printed, and
 # removes its log.
 verdict() { # name, status, log

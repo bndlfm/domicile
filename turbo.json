@@ -51,6 +51,9 @@
       ],
       "outputs": [".next/**", "!.next/cache/**"]
     },
+    "build:publish": {
+      "dependsOn": ["^build:publish", "prepare", "build"]
+    },
     "build:storybook": {
       "dependsOn": ["^build", "//#build", "^prepare", "prepare"],
       "inputs": ["$TURBO_DEFAULT$", "!README.md", "!**/*.test.*"],

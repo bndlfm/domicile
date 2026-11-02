@@ -4,6 +4,9 @@
 # dist-tag, with siblings at the same version, no `workspace:` or `catalog:`
 # ranges, and the working tree unchanged. A release packs each package at its
 # committed version for the `latest` dist-tag.
+#
+# Stamps versions into the checkout's manifests and bun.lock while it runs.
+# check-runner: alone
 set -u
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
