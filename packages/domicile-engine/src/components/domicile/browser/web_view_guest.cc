@@ -1180,6 +1180,16 @@ void WebViewGuest::RemoveCompletedDownload(const std::string& path) {
   ReportDownloads();
 }
 
+void WebViewGuest::CancelDownload(const std::string& path) {
+  for (download::DownloadItem* item : downloads_) {
+    if (item->GetState() == download::DownloadItem::IN_PROGRESS &&
+        item->GetTargetFilePath().AsUTF8Unsafe() == path) {
+      // Reported once the item says it is canceled, in OnDownloadUpdated.
+      item->Cancel(/*user_cancel=*/true);
+    }
+  }
+}
+
 void WebViewGuest::Reload() {
   CHECK(guest_contents_);
   // With `check_for_repost`, reloading a POST result calls content's no-op
@@ -1756,8 +1766,14 @@ void WebViewGuest::ReportDownloads() {
     // Logged for guard-webview-download.sh.
     LOG(INFO) << "domicile: a <webview> reported " << tally.count
               << " downloads in progress.";
+    std::vector<mojom::WebViewRunningDownloadPtr> running;
+    for (const RunningDownload& download : tally.running) {
+      running.push_back(mojom::WebViewRunningDownload::New(
+          download.path, download.received_bytes, download.total_bytes));
+    }
     client_->DownloadsChanged(tally.count, tally.received_bytes,
-                              tally.total_bytes, tally.completed);
+                              tally.total_bytes, std::move(running),
+                              tally.completed);
   }
 }
 

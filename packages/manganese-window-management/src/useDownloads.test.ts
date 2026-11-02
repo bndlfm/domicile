@@ -54,6 +54,7 @@ describe("useDownloads", () => {
       completedPaths: undefined,
       count: 1,
       receivedBytes: 10,
+      running: undefined,
       totalBytes: 100,
     });
   });
@@ -68,6 +69,7 @@ describe("useDownloads", () => {
       completedPaths: undefined,
       count: 2,
       receivedBytes: 30,
+      running: undefined,
       totalBytes: 0,
     });
   });
@@ -86,6 +88,28 @@ describe("useDownloads", () => {
     ]);
   });
 
+  it("reads each download in progress", () => {
+    const view = guest();
+    const { result } = renderHook(() => useDownloads(view.element));
+    view.downloads(2, 15, 0, 0);
+    const lists = {
+      downloadRunningPaths: [
+        "/home/me/Downloads/a.zip",
+        "/home/me/Downloads/b.pdf",
+      ],
+      downloadRunningReceivedBytes: [10, 5],
+      downloadRunningTotalBytes: [100, 0],
+    };
+    for (const [name, value] of Object.entries(lists)) {
+      Object.defineProperty(view.element, name, { configurable: true, value });
+    }
+    view.changed();
+    expect(result.current.running).toStrictEqual([
+      { path: "/home/me/Downloads/a.zip", receivedBytes: 10, totalBytes: 100 },
+      { path: "/home/me/Downloads/b.pdf", receivedBytes: 5, totalBytes: 0 },
+    ]);
+  });
+
   it("says a window with no view of its own yet downloads nothing", () => {
     const { result } = renderHook(() => useDownloads(null));
     expect(result.current).toStrictEqual({
@@ -93,6 +117,7 @@ describe("useDownloads", () => {
       completedPaths: [],
       count: 0,
       receivedBytes: 0,
+      running: [],
       totalBytes: 0,
     });
   });

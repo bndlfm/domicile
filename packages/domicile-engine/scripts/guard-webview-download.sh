@@ -213,6 +213,8 @@ SAVED_ANYWHERE=$([ -n "$FOUND" ] && echo 1 || echo 0)
 # but the shell was not told".
 SAW_GUEST_COUNTED=$(saw "domicile: a <webview> reported 1 downloads in progress.")
 SAW_COUNTED=$(saw "GUARD downloads count=1 ")
+# Listed one by one too, by the path it is saved at.
+SAW_LISTED=$(saw " running=$HOME_DIR/$PICK")
 # The element starts at 0, so a change to 0 follows a count.
 SAW_CLEARED=$(saw "GUARD downloads count=0 ")
 # With the path it was saved at, absolute.
@@ -225,7 +227,7 @@ echo
 echo "shell=$SAW_SHELL page=$SAW_PAGE press=$SAW_CHROME guest=$SAW_GUEST fetched=$SAW_FETCHED"
 echo "the browser asked=$SAW_BROWSER; the shell was asked=$SAW_ASKED with the name=$SAW_SUGGESTED in the folder=$SAW_FOLDER and answered=$SAW_ANSWERED"
 echo "on the disk: where the shell said=$SAVED anywhere=$SAVED_ANYWHERE"
-echo "in progress: the guest counted=$SAW_GUEST_COUNTED; the shell heard=$SAW_COUNTED, then none=$SAW_CLEARED"
+echo "in progress: the guest counted=$SAW_GUEST_COUNTED; the shell heard=$SAW_COUNTED, listed=$SAW_LISTED, then none=$SAW_CLEARED"
 echo "finished: kept=$SAW_FINISHED, removed=$SAW_FORGOTTEN"
 [ -n "$FOUND" ] && printf '  %s\n' $FOUND
 echo "everything in the home, for the record:"
@@ -300,6 +302,10 @@ target while in progress"
     FAILURE="the guest counted the download and the shell never heard: \
 DownloadsChanged on WebViewGuestClient, the dispatch in HTMLWebViewElement, \
 or the event's name"
+  elif [ "$SAW_LISTED" != "1" ]; then
+    FAILURE="the shell heard a download in progress and never its path in \
+downloadRunningPaths: the running list in TallyDownloads, DownloadsChanged's \
+running downloads, or HTMLWebViewElement::DownloadsChanged"
   elif [ "$SAW_CLEARED" != "1" ]; then
     FAILURE="THE DOWNLOAD IS STILL IN PROGRESS after it was saved: the element \
 never went back to 0. OnDownloadUpdated did not report the finish"
@@ -316,7 +322,7 @@ WebViewGuest::RemoveCompletedDownload, or the call over WebViewGuest"
     PASSED="a download started inside a browser window asked the shell where \
 it goes -- carrying the site's name for it -- landed at the path the shell \
 answered with, relative to the home, with the bytes the site sent, and the \
-element counted it in progress until it finished, then as finished until the \
+element counted and listed it in progress until it finished, then as finished until the \
 shell removed it by its path"
   fi
 elif [ "$SAVED_ANYWHERE" = "1" ]; then

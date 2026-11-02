@@ -48,6 +48,7 @@ run_block() { # $1 NEGATIVE, then NAME=value overrides
   SAVED_ANYWHERE=1
   SAW_GUEST_COUNTED=1
   SAW_COUNTED=1
+  SAW_LISTED=1
   SAW_CLEARED=1
   SAW_FINISHED=1
   SAW_FORGOTTEN=1
@@ -82,7 +83,7 @@ blames() { # $1 word, then the args verdict takes
 }
 
 # The control's readings: the shell canceled, so nothing was saved.
-CONTROL="SAVED=0 SAVED_ANYWHERE=0 SAW_GUEST_COUNTED=0 SAW_COUNTED=0 SAW_CLEARED=0 SAW_FINISHED=0 SAW_FORGOTTEN=0"
+CONTROL="SAVED=0 SAVED_ANYWHERE=0 SAW_GUEST_COUNTED=0 SAW_COUNTED=0 SAW_LISTED=0 SAW_CLEARED=0 SAW_FINISHED=0 SAW_FORGOTTEN=0"
 
 echo "a run that never got as far as measuring anything"
 # shellcheck disable=SC2086
@@ -125,6 +126,8 @@ expect "a download the guest never counted names ReportDownloads" "yes" \
   "$(blames "ReportDownloads" 0 SAW_GUEST_COUNTED=0 SAW_COUNTED=0)"
 expect "a count the shell never heard names the element" "yes" \
   "$(blames "HTMLWebViewElement" 0 SAW_COUNTED=0)"
+expect "a download counted but not listed by its path names the list" "yes" \
+  "$(blames "downloadRunningPaths" 0 SAW_LISTED=0)"
 expect "a download still counted once saved is a failure" "fail" \
   "$(verdict 0 SAW_CLEARED=0)"
 expect "a download still counted once saved says so" "yes" \

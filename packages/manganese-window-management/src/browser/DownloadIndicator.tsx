@@ -12,7 +12,7 @@ type Props = {
   downloads: Downloads;
   /** Stops showing the finished downloads. */
   onClear: () => void;
-  /** Shows the finished downloads' popup. */
+  /** Shows the downloads' popup. */
   onShow: () => void;
   /** The indicator, for the downloads popup to hang from. */
   ref: Ref<HTMLDivElement>;
@@ -20,8 +20,8 @@ type Props = {
 
 /**
  * A browser window's downloads: how far the ones in progress have come, or,
- * once none are, that some finished, until the user clears them. Pressing the
- * finished ones shows them.
+ * once none are, that some finished, until the user clears them. Pressing it
+ * shows them.
  */
 export const DownloadIndicator = ({
   downloads,
@@ -37,43 +37,51 @@ export const DownloadIndicator = ({
       ref={ref}
     />
   ) : (
-    <DownloadProgress downloads={downloads} ref={ref} />
+    <DownloadProgress downloads={downloads} onShow={onShow} ref={ref} />
   );
 
 /**
- * A percentage beside a download icon. With a size unknown the icon pulses and
- * no amount is claimed.
+ * A percentage beside a download icon, which shows the downloads when pressed.
+ * With a size unknown the icon pulses and no amount is claimed.
  */
 const DownloadProgress = ({
   downloads,
+  onShow,
   ref,
 }: {
   downloads: Downloads;
+  onShow: () => void;
   ref: Ref<HTMLDivElement>;
 }) => {
   const percent =
     downloads.totalBytes === 0
       ? undefined
       : Math.floor((downloads.receivedBytes / downloads.totalBytes) * 100);
+  const name =
+    downloads.count === 1
+      ? "Downloading"
+      : `Downloading ${String(downloads.count)} files`;
 
   return (
     <div
-      aria-label={
-        downloads.count === 1
-          ? "Downloading"
-          : `Downloading ${downloads.count} files`
-      }
-      aria-valuenow={percent}
       className={indicatorStyles}
       data-size-unknown={percent === undefined ? "" : undefined}
       ref={ref}
-      role="progressbar"
     >
-      <AnimatedDownloadIcon
-        cue={downloads.count + downloads.completed}
-        size={14}
-      />
-      {percent === undefined ? undefined : `${percent}%`}
+      <Button label={name} onClick={onShow} rounded size="xs" variant="ghost">
+        <span
+          aria-label={name}
+          aria-valuenow={percent}
+          className={statusStyles}
+          role="progressbar"
+        >
+          <AnimatedDownloadIcon
+            cue={downloads.count + downloads.completed}
+            size={14}
+          />
+          {percent === undefined ? undefined : `${String(percent)}%`}
+        </span>
+      </Button>
     </div>
   );
 };
@@ -119,12 +127,11 @@ const FinishedDownloads = ({
 );
 
 // A capsule like the zoom controls beside it. Fixed-width digits so the bar
-// does not shift as the number climbs. Finished, it turns the success color and
-// the clear button sits inside its edge.
+// does not shift as the number climbs. Its buttons sit inside its edge.
+// Finished, it turns the success color.
 const indicatorStyles = hstack({
   "&[data-finished]": {
     color: "success",
-    paddingInline: 0.5,
   },
   "&[data-size-unknown] svg": {
     animation: "pulse {durations.pulse} {easings.in-out} infinite",
@@ -138,7 +145,7 @@ const indicatorStyles = hstack({
   fontSize: "xs",
   fontVariantNumeric: "tabular-nums",
   gap: 1,
-  paddingInline: 2,
+  paddingInline: 0.5,
 });
 
 const statusStyles = hstack({

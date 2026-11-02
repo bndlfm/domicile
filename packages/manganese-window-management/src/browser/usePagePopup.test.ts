@@ -5,13 +5,15 @@ import { PagePopupKind, usePagePopup } from "./usePagePopup";
 
 describe(usePagePopup, () => {
   it("shows nothing at first, even with downloads already finished", () => {
-    const { result } = renderHook(() => usePagePopup(2, true));
+    const { result } = renderHook(() =>
+      usePagePopup({ completed: 2, running: 0 }, true),
+    );
     expect(result.current.kind).toBeUndefined();
   });
 
   it("shows the downloads when one more finishes", () => {
     const { rerender, result } = renderHook(
-      (completed: number) => usePagePopup(completed, true),
+      (completed: number) => usePagePopup({ completed, running: 0 }, true),
       { initialProps: 0 },
     );
     rerender(1);
@@ -20,7 +22,7 @@ describe(usePagePopup, () => {
 
   it("shows nothing when finished downloads are cleared", () => {
     const { rerender, result } = renderHook(
-      (completed: number) => usePagePopup(completed, true),
+      (completed: number) => usePagePopup({ completed, running: 0 }, true),
       { initialProps: 2 },
     );
     rerender(1);
@@ -29,7 +31,7 @@ describe(usePagePopup, () => {
 
   it("swaps one popup for another", () => {
     const { rerender, result } = renderHook(
-      (completed: number) => usePagePopup(completed, true),
+      (completed: number) => usePagePopup({ completed, running: 0 }, true),
       { initialProps: 0 },
     );
     rerender(1);
@@ -42,7 +44,7 @@ describe(usePagePopup, () => {
   // A zoom right after the downloads popup closed once brought it back.
   it("never brings a closed popup back", () => {
     const { rerender, result } = renderHook(
-      (completed: number) => usePagePopup(completed, true),
+      (completed: number) => usePagePopup({ completed, running: 0 }, true),
       { initialProps: 0 },
     );
     rerender(1);
@@ -58,7 +60,7 @@ describe(usePagePopup, () => {
 
   it("closes only what it is asked to, not what replaced it", () => {
     const { rerender, result } = renderHook(
-      (completed: number) => usePagePopup(completed, true),
+      (completed: number) => usePagePopup({ completed, running: 0 }, true),
       { initialProps: 0 },
     );
     rerender(1);
@@ -73,7 +75,9 @@ describe(usePagePopup, () => {
   });
 
   it("counts each showing, so a repeat restarts its time", () => {
-    const { result } = renderHook(() => usePagePopup(0, true));
+    const { result } = renderHook(() =>
+      usePagePopup({ completed: 0, running: 0 }, true),
+    );
     act(() => {
       result.current.show(PagePopupKind.Zoom);
     });
@@ -88,7 +92,7 @@ describe(usePagePopup, () => {
   // its popup stayed over the new window.
   it("closes once its window is out of view, and stays closed after", () => {
     const { rerender, result } = renderHook(
-      (inView: boolean) => usePagePopup(0, inView),
+      (inView: boolean) => usePagePopup({ completed: 0, running: 0 }, inView),
       { initialProps: true },
     );
     act(() => {
@@ -103,11 +107,27 @@ describe(usePagePopup, () => {
   it("does not show downloads that finish while its window is out of view", () => {
     const { rerender, result } = renderHook(
       ({ completed, inView }: { completed: number; inView: boolean }) =>
-        usePagePopup(completed, inView),
+        usePagePopup({ completed, running: 0 }, inView),
       { initialProps: { completed: 0, inView: false } },
     );
     rerender({ completed: 1, inView: false });
     rerender({ completed: 1, inView: true });
     expect(result.current.kind).toBeUndefined();
+  });
+
+  it("shows the downloads when one starts, and again when it finishes", () => {
+    const { rerender, result } = renderHook(
+      ({ completed, running }: { completed: number; running: number }) =>
+        usePagePopup({ completed, running }, true),
+      { initialProps: { completed: 0, running: 0 } },
+    );
+    rerender({ completed: 0, running: 1 });
+    expect(result.current.kind).toBe(PagePopupKind.Downloads);
+    const started = result.current.cue;
+    act(() => {
+      result.current.close(started);
+    });
+    rerender({ completed: 1, running: 0 });
+    expect(result.current.kind).toBe(PagePopupKind.Downloads);
   });
 });

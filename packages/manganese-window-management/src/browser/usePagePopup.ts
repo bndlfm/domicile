@@ -15,15 +15,23 @@ type Shown = {
 
 /**
  * The one popup a browser window shows over its page: its zoom, or its
- * finished downloads, as Chrome's bubbles do. A new one replaces the one
+ * downloads, as Chrome's bubbles do. A new one replaces the one
  * showing; a closed one never comes back by itself.
  *
- * Shows the downloads each time `completed`, the count of finished downloads,
- * goes up while `inView`: the window is focused and no tab covers it. Closes
- * when the window goes out of view, so it never sits over another window.
+ * Shows the downloads each time one starts or finishes while `inView`: the
+ * window is focused and no tab covers it. Closes when the window goes out of
+ * view, so it never sits over another window.
  */
 export const usePagePopup = (
-  completed: number,
+  {
+    completed,
+    running,
+  }: {
+    /** How many downloads finished. */
+    completed: number;
+    /** How many downloads are in progress. */
+    running: number;
+  },
   inView: boolean,
 ): Shown & {
   /** Closes the popup shown for `cue`, unless another has replaced it. */
@@ -32,13 +40,15 @@ export const usePagePopup = (
 } => {
   const [shown, setShown] = useState<Shown>({ cue: 0, kind: undefined });
   const [lastCompleted, setLastCompleted] = useState(completed);
+  const [lastRunning, setLastRunning] = useState(running);
   const [wasInView, setWasInView] = useState(inView);
 
   // Adjusts state during render rather than in an effect, so the popup shows
   // in the same render as the download.
-  if (completed !== lastCompleted) {
+  if (completed !== lastCompleted || running !== lastRunning) {
     setLastCompleted(completed);
-    if (completed > lastCompleted && inView) {
+    setLastRunning(running);
+    if ((completed > lastCompleted || running > lastRunning) && inView) {
       setShown({ cue: shown.cue + 1, kind: PagePopupKind.Downloads });
     }
   }

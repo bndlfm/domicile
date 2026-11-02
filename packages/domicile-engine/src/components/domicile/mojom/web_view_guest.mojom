@@ -192,6 +192,16 @@ enum WebViewPermissionAnswer {
   kDismiss,
 };
 
+// One of a page's downloads in progress. See
+// WebViewGuestClient.DownloadsChanged.
+struct WebViewRunningDownload {
+  // Where it is saved, absolute.
+  string path;
+  int64 received_bytes;
+  // 0 when the server sent no size.
+  int64 total_bytes;
+};
+
 // One permission's setting for the page's site.
 struct WebViewSitePermission {
   WebViewPermission permission;
@@ -317,8 +327,8 @@ interface WebViewGuestClient {
   LoadProgressChanged(double progress);
 
   // The guest's page's downloads, for a download indicator: how many are in
-  // progress, their bytes received and expected in all, and where the finished
-  // ones were saved, in the order they started.
+  // progress, their bytes received and expected in all, each one in progress,
+  // and where the finished ones were saved, both in the order they started.
   // `total_bytes` is 0 when any one in progress has an unknown size.
   //
   // Counts a download in progress once the shell has said where it goes. A
@@ -328,6 +338,7 @@ interface WebViewGuestClient {
   DownloadsChanged(int32 count,
                    int64 received_bytes,
                    int64 total_bytes,
+                   array<WebViewRunningDownload> running,
                    array<string> completed);
 
   // The guest's current URL and security level, for an address bar.
@@ -573,6 +584,10 @@ interface WebViewGuest {
   // Stops counting the page's finished downloads saved at `path`. Nothing
   // happens if none were.
   RemoveCompletedDownload(string path);
+
+  // Cancels the page's download in progress saved at `path`. Nothing happens
+  // if none is.
+  CancelDownload(string path);
 
   // Sets the zoom factor; 1 is 100%. Applied through HostZoomMap, so it zooms
   // the whole site, as in Chrome. Reported back as

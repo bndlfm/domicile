@@ -42,8 +42,9 @@ export const WEBVIEW_LOAD_PROGRESS_CHANGE_EVENT =
  * Fired when {@link HTMLWebViewElement.downloadCount},
  * {@link HTMLWebViewElement.downloadReceivedBytes},
  * {@link HTMLWebViewElement.downloadTotalBytes} or
- * {@link HTMLWebViewElement.downloadCompletedCount} or
- * {@link HTMLWebViewElement.downloadCompletedPaths} changes. Carries no payload.
+ * {@link HTMLWebViewElement.downloadCompletedCount},
+ * {@link HTMLWebViewElement.downloadCompletedPaths} or the downloads in
+ * progress, such as {@link HTMLWebViewElement.downloadRunningPaths}, change. Carries no payload.
  * Bubbles.
  */
 export const WEBVIEW_DOWNLOADS_CHANGE_EVENT = "domicile-downloads-change";
@@ -536,6 +537,27 @@ declare global {
      * `downloadCompletedPaths`. `undefined` from an engine without it.
      */
     readonly removeCompletedDownload: ((path: string) => void) | undefined;
+    /**
+     * Where each download in progress is saved, absolute, in the order they
+     * started. `undefined` from an engine without it.
+     */
+    readonly downloadRunningPaths: readonly string[] | undefined;
+    /**
+     * Bytes received by each download in progress, at the same index as
+     * `downloadRunningPaths`. `undefined` from an engine without it.
+     */
+    readonly downloadRunningReceivedBytes: readonly number[] | undefined;
+    /**
+     * Bytes expected by each download in progress, at the same index as
+     * `downloadRunningPaths`; `0` when its size is unknown. `undefined` from
+     * an engine without it.
+     */
+    readonly downloadRunningTotalBytes: readonly number[] | undefined;
+    /**
+     * Cancels the download in progress saved at `path`, an entry of
+     * `downloadRunningPaths`. `undefined` from an engine without it.
+     */
+    readonly cancelDownload: ((path: string) => void) | undefined;
     /**
      * The current address, as a browser's address bar shows it. Differs from
      * {@link HTMLWebViewElement.src} after links and redirects.

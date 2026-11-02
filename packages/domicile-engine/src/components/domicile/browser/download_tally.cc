@@ -16,6 +16,9 @@ DownloadTally TallyDownloads(const std::vector<DownloadReading>& downloads) {
           tally.received_bytes += download.received_bytes;
           tally.total_bytes += download.total_bytes;
           size_unknown |= download.total_bytes == 0;
+          tally.running.push_back({.path = download.path,
+                                   .received_bytes = download.received_bytes,
+                                   .total_bytes = download.total_bytes});
         }
         break;
       case DownloadStage::kComplete:

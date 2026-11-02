@@ -15,6 +15,7 @@ const BAR = {
     completedPaths: [],
     count: 0,
     receivedBytes: 0,
+    running: [],
     totalBytes: 0,
   },
   holdZoom: false,
@@ -174,6 +175,7 @@ describe("AddressBar", () => {
             completedPaths: [],
             count: 1,
             receivedBytes: 456,
+            running: [],
             totalBytes: 1000,
           }}
         />,
@@ -195,6 +197,7 @@ describe("AddressBar", () => {
             completedPaths: [],
             count: 3,
             receivedBytes: 10,
+            running: [],
             totalBytes: 100,
           }}
         />,
@@ -215,6 +218,7 @@ describe("AddressBar", () => {
             completedPaths: [],
             count: 1,
             receivedBytes: 10,
+            running: [],
             totalBytes: 0,
           }}
         />,
@@ -237,6 +241,7 @@ describe("AddressBar", () => {
             completedPaths: [],
             count: 0,
             receivedBytes: 0,
+            running: [],
             totalBytes: 0,
           }}
           onClearDownloads={() => {
@@ -261,6 +266,7 @@ describe("AddressBar", () => {
             completedPaths: [],
             count: 0,
             receivedBytes: 0,
+            running: [],
             totalBytes: 0,
           }}
           onShowDownloads={() => {
@@ -270,6 +276,30 @@ describe("AddressBar", () => {
       );
 
       await userEvent.click(control("Downloaded"));
+
+      expect(calls).toStrictEqual(["show"]);
+    });
+
+    it("shows the downloads in progress when pressed", async () => {
+      const calls: string[] = [];
+      render(
+        <AddressBar
+          {...BAR}
+          downloads={{
+            completed: 0,
+            completedPaths: [],
+            count: 1,
+            receivedBytes: 456,
+            running: [],
+            totalBytes: 1000,
+          }}
+          onShowDownloads={() => {
+            calls.push("show");
+          }}
+        />,
+      );
+
+      await userEvent.click(control("Downloading"));
 
       expect(calls).toStrictEqual(["show"]);
     });
@@ -284,6 +314,7 @@ describe("AddressBar", () => {
             completedPaths: [],
             count: 0,
             receivedBytes: 0,
+            running: [],
             totalBytes: 0,
           }}
           onDownloadsAnchor={(anchor) => {
@@ -304,6 +335,7 @@ describe("AddressBar", () => {
             completedPaths: [],
             count: 0,
             receivedBytes: 0,
+            running: [],
             totalBytes: 0,
           }}
         />,
@@ -322,6 +354,7 @@ describe("AddressBar", () => {
             completedPaths: [],
             count: 1,
             receivedBytes: 10,
+            running: [],
             totalBytes: 100,
           }}
         />,

@@ -460,6 +460,7 @@ class WebViewGuest : public mojom::WebViewGuest,
   void Reload() override;
   void ClearCompletedDownloads() override;
   void RemoveCompletedDownload(const std::string& path) override;
+  void CancelDownload(const std::string& path) override;
   void SetZoom(double factor) override;
 
   // Find in page on the guest's WebContents, so every guest frame is searched
