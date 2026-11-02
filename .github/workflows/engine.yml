@@ -25,6 +25,7 @@ on:
     # `engine-release.nix` and `engine-official.nix` are excluded because this
     # job never reads them: it builds `CHROMIUM_PIN` plus `patches/`.
     # nix-build.yml fetches the tarball they name and so checks a repin.
+    # `CHROMIUM_VERSION` is only for the website; the build reads the pin.
     # packages/ci/tests/test-engine-path-filter.sh asserts that nix-build.yml keeps
     # running on every change.
     paths:
@@ -32,6 +33,7 @@ on:
       - "!packages/domicile-engine/**/*.md"
       - "!packages/domicile-engine/engine-release.nix"
       - "!packages/domicile-engine/engine-official.nix"
+      - "!packages/domicile-engine/CHROMIUM_VERSION"
       - "!packages/domicile-engine/tests/**"
       - "!packages/domicile-engine/scripts/update-engine-release.sh"
       - .github/workflows/engine.yml
@@ -43,6 +45,7 @@ on:
       - "!packages/domicile-engine/**/*.md"
       - "!packages/domicile-engine/engine-release.nix"
       - "!packages/domicile-engine/engine-official.nix"
+      - "!packages/domicile-engine/CHROMIUM_VERSION"
       - "!packages/domicile-engine/tests/**"
       - "!packages/domicile-engine/scripts/update-engine-release.sh"
       - .github/workflows/engine.yml
