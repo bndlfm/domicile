@@ -34,4 +34,12 @@ std::optional<gfx::Point> PointerWarpTarget(const gfx::Rect& page,
                     Pinned(page.y() + y, page.y(), page.bottom() - 1));
 }
 
+bool PointerAlreadyOver(const std::optional<gfx::PointF>& pointer,
+                        const gfx::RectF& box) {
+  // `gfx::RectF::Contains` leaves out the right and bottom edges.
+  return pointer.has_value() && pointer->x() >= box.x() &&
+         pointer->x() <= box.right() && pointer->y() >= box.y() &&
+         pointer->y() <= box.bottom();
+}
+
 }  // namespace domicile

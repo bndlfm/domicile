@@ -3,7 +3,9 @@
 //
 // The rule: the pointer moves only when it will not be over the newly focused
 // window once the layout settles. Every focus change `usePointerWarp` answers
-// goes through `warpTo`, which applies it. See
+// goes through `warpTo`, which hands the engine that window's frame: the page
+// cannot see the pointer move over a browser window's page, so the engine,
+// which can, makes the check. See
 // packages/manganese-window-management/docs/WINDOW-MANAGEMENT.md#pointer-warping.
 
 import type { Rect } from "./rect";
@@ -36,25 +38,31 @@ export type Shown = {
 type Move = {
   /** The focus before the key press. */
   from: Focus | undefined;
-  /** Where the page last saw the pointer, if ever. */
-  pointer: Spot | undefined;
   /** The focus now. */
   to: Focus | undefined;
 };
 
+/** A warp to ask the engine for. */
+export type Warp = {
+  /** Where the pointer goes. */
+  to: Spot;
+  /** The box the pointer stays put over: the new window's frame. */
+  unlessOver: Rect;
+};
+
 /**
- * Where to warp the pointer, or `undefined` to leave it.
+ * The warp to ask for, or `undefined` to leave the pointer.
  *
- * Warps only when the focus changed window or box (as `mod+shift+h` does) and
- * the pointer will not be over the new window's frame. A window that slides in
+ * Asks only when the focus changed window or box (as `mod+shift+h` does), and
+ * only for a pointer outside the new window's frame. A window that slides in
  * under the pointer, such as a neighbor filling a closed window's space, keeps
  * it where it is. Other keys, such as a split or the launcher, must not move
  * the cursor.
  */
-export const warpTo = ({ from, pointer, to }: Move): Spot | undefined =>
-  to === undefined || settled(from, to) || holds(to.frame, pointer)
+export const warpTo = ({ from, to }: Move): Warp | undefined =>
+  to === undefined || settled(from, to)
     ? undefined
-    : middleOf(to.box);
+    : { to: middleOf(to.box), unlessOver: to.frame };
 
 /**
  * Whether the pointer is over a shown window other than `focus`.
@@ -79,10 +87,7 @@ const settled = (from: Focus | undefined, to: Focus): boolean =>
   from.box.height === to.box.height;
 
 /**
- * Whether the pointer is over `box`.
- *
- * An unknown pointer counts as outside, so the warp happens and focus cannot
- * bounce back.
+ * Whether the pointer is over `box`. An unknown pointer counts as outside.
  */
 const holds = (box: Rect, pointer: Spot | undefined): boolean =>
   pointer !== undefined &&

@@ -15,6 +15,14 @@ describe("webIdlToTypeScript", () => {
     expect(emit('enum Theme { "dark" };')).toStartWith("// Generated.\n");
   });
 
+  it("takes a platform interface that lib.dom declares by its own name", () => {
+    expect(
+      emit(`interface Host {
+  undefined warp(optional DOMRectReadOnly? box = null);
+};`),
+    ).toContain("warp(box?: DOMRectReadOnly | null): void;");
+  });
+
   it("emits an enum as a union of its values, with its comment", () => {
     expect(
       emit(`// The theme.

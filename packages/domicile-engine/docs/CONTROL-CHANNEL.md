@@ -110,6 +110,9 @@ The engine has two channels to the rest of Domicile:
     shell moves the pointer onto the newly focused window.
   - A page may move the pointer only within its own box. Coordinates outside
     are clamped.
+  - `unless_over`, a box in the page's coordinates, skips the warp while the
+    pointer is over it, by `DeskPointer`'s position. The page cannot see the
+    pointer over a browser window's page.
   - Logic and tests: `components/domicile/browser/pointer_warp.h`. Execution:
     `chrome/browser/domicile/domicile_pointer_warp.cc`.
 - **A compositor that hangs up** is replaced, not fatal. The browser:
