@@ -79,6 +79,10 @@
       "types": "./dist/desktop/displays.d.ts",
       "default": "./dist/desktop/displays.js"
     },
+    "./desktop/downloads": {
+      "types": "./dist/desktop/downloads.d.ts",
+      "default": "./dist/desktop/downloads.js"
+    },
     "./desktop/extensions": {
       "types": "./dist/desktop/extensions.d.ts",
       "default": "./dist/desktop/extensions.js"

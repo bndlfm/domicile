@@ -23,12 +23,12 @@
 #   the shell was asked in save mode with the site's file name
 #   the shell answered without throwing
 #   the file is at the shell's path with the site's bytes (the claim)
-#   the element counted the download in progress, then counted none
-#   the element kept it as finished, with its path, until the shell removed it
+#   the desk listed the download in progress, then as finished, with its path
+#   and its window, until the shell removed it
 #
 # NEGATIVE=1 runs a shell that cancels. Nothing may be saved anywhere in the
 # home, proving the browser does not save regardless of the answer, and the
-# element never counts it, in progress or finished.
+# desk never lists it, in progress or finished.
 #
 # The guard uses its own empty home, so any file there with the site's bytes
 # is this run's download.
@@ -209,24 +209,21 @@ FOUND="$(
   } | sort -u
 )"
 SAVED_ANYWHERE=$([ -n "$FOUND" ] && echo 1 || echo 0)
-# Logged by WebViewGuest::ReportDownloads. Tells "never counted" from "counted
-# but the shell was not told".
-SAW_GUEST_COUNTED=$(saw "domicile: a <webview> reported 1 downloads in progress.")
-SAW_COUNTED=$(saw "GUARD downloads count=1 ")
-# The element starts at 0, so a change to 0 follows a count.
-SAW_CLEARED=$(saw "GUARD downloads count=0 ")
-# With the path it was saved at, absolute.
-SAW_FINISHED=$(saw " completed=1 paths=$HOME_DIR/$PICK")
-# The element starts at 0, so nothing in progress and nothing finished is only
-# reported after the shell removes the finished download.
-SAW_FORGOTTEN=$(saw "GUARD downloads count=0 received=0 total=0 completed=0")
+# Logged by DeskDownloads::Add. Tells "never listed" from "listed but the
+# shell was not told". The guard's <webview> is not a browser window, so it
+# names none.
+SAW_GUEST_COUNTED=$(saw 'domicile: the desk listed a download from browser window "".')
+# With the path it is saved at, absolute.
+SAW_COUNTED=$(saw "GUARD downloads in-progress:$HOME_DIR/$PICK:")
+SAW_FINISHED=$(saw "GUARD downloads complete:$HOME_DIR/$PICK:")
+SAW_FORGOTTEN=$(saw "GUARD download-removed")
 
 echo
 echo "shell=$SAW_SHELL page=$SAW_PAGE press=$SAW_CHROME guest=$SAW_GUEST fetched=$SAW_FETCHED"
 echo "the browser asked=$SAW_BROWSER; the shell was asked=$SAW_ASKED with the name=$SAW_SUGGESTED in the folder=$SAW_FOLDER and answered=$SAW_ANSWERED"
 echo "on the disk: where the shell said=$SAVED anywhere=$SAVED_ANYWHERE"
-echo "in progress: the guest counted=$SAW_GUEST_COUNTED; the shell heard=$SAW_COUNTED, then none=$SAW_CLEARED"
-echo "finished: kept=$SAW_FINISHED, removed=$SAW_FORGOTTEN"
+echo "in progress: the desk listed=$SAW_GUEST_COUNTED; the shell heard=$SAW_COUNTED"
+echo "finished: listed=$SAW_FINISHED, removed=$SAW_FORGOTTEN"
 [ -n "$FOUND" ] && printf '  %s\n' $FOUND
 echo "everything in the home, for the record:"
 find "$HOME_DIR" -type f 2>/dev/null | sed 's/^/  /'
@@ -279,45 +276,39 @@ elif [ "$NEGATIVE" = "1" ]; then
 landed in the home anyway, so the positive run's file is not the shell's \
 answer being followed"
   elif [ "$SAW_COUNTED" = "1" ]; then
-    FAILURE="THE CONTROL COUNTED A DOWNLOAD: the shell canceled and the \
-element said one was in progress. A download counts once it has a target -- \
-see TallyDownloads in download_tally.h"
+    FAILURE="THE CONTROL LISTED A DOWNLOAD: the shell canceled and the desk \
+said one was in progress. A download is listed once it has a target -- see \
+IsListed in download_list.h"
   elif [ "$SAW_FINISHED" = "1" ]; then
-    FAILURE="THE CONTROL COUNTED A FINISHED DOWNLOAD: the shell canceled and \
-the element said one finished. A canceled download is kStopped -- see \
-DownloadStageOf in web_view_guest.cc"
+    FAILURE="THE CONTROL LISTED A FINISHED DOWNLOAD: the shell canceled and \
+the desk said one finished. A canceled download is kCanceled -- see StageOf \
+in desk_downloads.cc"
   else
     PASSED="the control is sharp: the shell canceled, and nothing landed \
 anywhere in the home. So what the positive run reads is the shell's answer"
   fi
 elif [ "$SAVED" = "1" ]; then
   if [ "$SAW_GUEST_COUNTED" != "1" ]; then
-    FAILURE="the download was saved and never counted as in progress: \
-WebViewGuest::ReportDownloads never reported it. Either OnDownloadCreated did \
-not find this guest from the download's WebContents, or the download had no \
-target while in progress"
+    FAILURE="the download was saved and the desk never listed it: \
+WebViewGuest::OnDownloadCreated did not find this guest from the download's \
+WebContents, so DeskDownloads::Add never ran"
   elif [ "$SAW_COUNTED" != "1" ]; then
-    FAILURE="the guest counted the download and the shell never heard: \
-DownloadsChanged on WebViewGuestClient, the dispatch in HTMLWebViewElement, \
-or the event's name"
-  elif [ "$SAW_CLEARED" != "1" ]; then
-    FAILURE="THE DOWNLOAD IS STILL IN PROGRESS after it was saved: the element \
-never went back to 0. OnDownloadUpdated did not report the finish"
+    FAILURE="the desk listed the download and the shell never heard it in \
+progress: DownloadsChanged on DownloadsClient, DomicileHost's dispatch, or \
+the event's name. Or the download had no target while in progress"
   elif [ "$SAW_FINISHED" != "1" ]; then
-    FAILURE="THE FINISHED DOWNLOAD WAS NOT KEPT: the element stopped counting \
-it in progress and never counted it in downloadCompletedCount with its path \
-in downloadCompletedPaths. See DownloadStageOf and ReportDownloads in \
-web_view_guest.cc and TallyDownloads"
+    FAILURE="THE FINISHED DOWNLOAD WAS NOT LISTED: the shell heard it in \
+progress and never as complete with its path. See StageOf and List in \
+desk_downloads.cc"
   elif [ "$SAW_FORGOTTEN" != "1" ]; then
-    FAILURE="the shell called removeCompletedDownload() with its path and the \
-element still counts the finished download: \
-WebViewGuest::RemoveCompletedDownload, or the call over WebViewGuest"
+    FAILURE="the shell called removeDownload() with its id and the desk \
+still lists the finished download: DeskDownloads::Remove, or the call over \
+Downloads"
   else
     PASSED="a download started inside a browser window asked the shell where \
 it goes -- carrying the site's name for it -- landed at the path the shell \
 answered with, relative to the home, with the bytes the site sent, and the \
-element counted it in progress until it finished, then as finished until the \
-shell removed it by its path"
+desk listed it in progress, then as finished, until the shell removed it"
   fi
 elif [ "$SAVED_ANYWHERE" = "1" ]; then
   FAILURE="THE FILE LANDED SOMEWHERE ELSE: the shell chose $PICK and the \

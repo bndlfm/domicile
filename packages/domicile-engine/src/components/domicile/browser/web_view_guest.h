@@ -17,18 +17,15 @@
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
-#include "base/scoped_multi_source_observation.h"
 #include "base/scoped_observation.h"
 #include "base/types/expected.h"
 #include "base/values.h"
 #include "components/content_settings/core/browser/content_settings_observer.h"
 #include "components/content_settings/core/browser/host_content_settings_map.h"
-#include "components/domicile/browser/download_tally.h"
 #include "components/domicile/browser/guest_dialogs.h"
 #include "components/domicile/browser/screen_choice.h"
 #include "components/domicile/browser/web_view_partition.h"
 #include "components/domicile/mojom/web_view_guest.mojom.h"
-#include "components/download/public/common/download_item.h"
 #include "components/input/native_web_keyboard_event.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/browser/context_menu_params.h"
@@ -194,8 +191,7 @@ class MediaAccess {
 //                               attaching, this object is deleted with it
 //   content_settings::Observer  reports the page's site permissions when a
 //                               setting changes
-//   DownloadManager::Observer,  report the progress of the page's downloads
-//   DownloadItem::Observer
+//   DownloadManager::Observer   lists the page's downloads on the desk
 //
 // A guest, not a subframe, so the page is a main frame: X-Frame-Options and
 // CSP frame-ancestors pass, history works across process changes, and storage
@@ -218,8 +214,7 @@ class WebViewGuest : public mojom::WebViewGuest,
                      public content::JavaScriptDialogManager,
                      public content::WebContentsObserver,
                      public content_settings::Observer,
-                     public content::DownloadManager::Observer,
-                     public download::DownloadItem::Observer {
+                     public content::DownloadManager::Observer {
  public:
   // Creates a guest for `placeholder`, a child frame of `owner`, and starts
   // attaching it. The attach replaces and destroys `placeholder`; a refused
@@ -458,8 +453,6 @@ class WebViewGuest : public mojom::WebViewGuest,
   void GoForward() override;
   void Stop() override;
   void Reload() override;
-  void ClearCompletedDownloads() override;
-  void RemoveCompletedDownload(const std::string& path) override;
   void SetZoom(double factor) override;
 
   // Find in page on the guest's WebContents, so every guest frame is searched
@@ -778,14 +771,10 @@ class WebViewGuest : public mojom::WebViewGuest,
 
   // content::DownloadManager::Observer:
   //
-  // Watches each download this page starts, for ReportDownloads.
+  // Lists each download this page starts on the desk. See DeskDownloads.
   void OnDownloadCreated(content::DownloadManager* manager,
                          download::DownloadItem* item) override;
   void ManagerGoingDown(content::DownloadManager* manager) override;
-
-  // download::DownloadItem::Observer:
-  void OnDownloadUpdated(download::DownloadItem* item) override;
-  void OnDownloadDestroyed(download::DownloadItem* item) override;
 
  private:
   WebViewGuest(content::RenderFrameHost& owner,
@@ -895,10 +884,6 @@ class WebViewGuest : public mojom::WebViewGuest,
   // Reports load progress to the element if it changed.
   void ReportLoadProgress(double progress);
 
-  // Reports the page's downloads in progress to the element if they changed.
-  // See DownloadsChanged in the mojom.
-  void ReportDownloads();
-
   // Reports the page's zoom to the element if it changed. Zoom changes when
   // the shell sets it, when another window on the same host changes it
   // (HostZoomMap is per host), or on navigation to a differently zoomed site.
@@ -976,7 +961,6 @@ class WebViewGuest : public mojom::WebViewGuest,
 
   bool reported_loading_ = false;
   double reported_load_progress_ = 0.0;
-  DownloadTally reported_downloads_;
   GURL reported_url_;
   mojom::WebViewSecurity reported_security_ =
       mojom::WebViewSecurity::kNeutral;
@@ -1028,13 +1012,6 @@ class WebViewGuest : public mojom::WebViewGuest,
   base::ScopedObservation<content::DownloadManager,
                           content::DownloadManager::Observer>
       download_manager_observation_{this};
-
-  // This page's downloads, kept until each is destroyed, or for a finished
-  // one, cleared: an interrupted one can resume.
-  std::vector<raw_ptr<download::DownloadItem>> downloads_;
-  base::ScopedMultiSourceObservation<download::DownloadItem,
-                                     download::DownloadItem::Observer>
-      download_observations_{this};
 
   // HostZoomMap zoom changes, including from other windows on the same host.
   // Dropped with the guest's WebContents, which ReportZoom reads.

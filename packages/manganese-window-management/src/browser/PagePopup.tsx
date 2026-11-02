@@ -20,7 +20,7 @@ type Props = {
 
 /**
  * A popup over a browser window's page saying what just changed, such as its
- * zoom or a finished download, as Chrome's bubbles do. Opens without taking
+ * zoom, as Chrome's bubbles do. Opens without taking
  * the keyboard from the page and closes by itself, but not while the pointer
  * is on it.
  */

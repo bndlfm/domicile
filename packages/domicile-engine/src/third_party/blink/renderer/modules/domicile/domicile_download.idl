@@ -1,0 +1,34 @@
+// Copyright 2026 Connor Prussin
+// SPDX-License-Identifier: MIT
+
+// One of the desk's downloads. See components/domicile/mojom/downloads.mojom.
+//
+// An interface for DomicileBrowserWindow's reason: these are read from the
+// desktop's `downloads` attribute.
+
+enum DomicileDownloadState { "in-progress", "complete", "failed" };
+
+[
+    Exposed=Window,
+    RuntimeEnabled=DomicileControlChannel
+] interface DomicileDownload {
+  // The id cancelDownload() and removeDownload() take.
+  readonly attribute DOMString id;
+
+  readonly attribute DomicileDownloadState state;
+
+  // Where it is saved.
+  readonly attribute DOMString path;
+
+  readonly attribute long long receivedBytes;
+
+  // 0 when the server sent no size.
+  readonly attribute long long totalBytes;
+
+  // The browser window whose page started it, as a DomicileBrowserWindow's
+  // `id`; empty for a <webview> that is not one. It may have closed since.
+  readonly attribute DOMString window;
+
+  // The address of the page that started it.
+  readonly attribute USVString page;
+};

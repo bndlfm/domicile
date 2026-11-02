@@ -14,6 +14,8 @@ import type { Dbus } from "./dbus";
 import { dbus } from "./dbus";
 import type { Displays } from "./displays";
 import { displays } from "./displays";
+import type { Downloads } from "./downloads";
+import { downloads } from "./downloads";
 import type { Extensions } from "./extensions";
 import { extensions } from "./extensions";
 import type { Files } from "./files";
@@ -63,6 +65,7 @@ export type Domicile = {
   readonly clipboard: Clipboard;
   readonly dbus: Dbus;
   readonly displays: Displays;
+  readonly downloads: Downloads;
   readonly extensions: Extensions;
   readonly files: Files;
   readonly googleCast: GoogleCast;
@@ -104,6 +107,7 @@ const build = (host: DomicileHost): Domicile => {
     clipboard: clipboard(host),
     dbus: bus,
     displays: displays(host, calls),
+    downloads: downloads(host),
     extensions: extensions(host),
     files: files(host, calls),
     googleCast: googleCast(host),
