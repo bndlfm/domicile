@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import type { Domicile } from "@domicile-desktop/sdk/desktop/desktop";
-import type { Extension } from "@domicile-desktop/sdk/extension";
+import type {
+  Extension,
+  ExtensionPopup,
+} from "@domicile-desktop/sdk/extension";
 import {
   WEBVIEW_CLOSE_EVENT,
   WEBVIEW_CONTENT_SIZE_CHANGE_EVENT,
@@ -23,6 +26,8 @@ import { ExtensionAction } from "./ExtensionAction";
 const BLOCKER = "abcdefghijklmnopabcdefghijklmnop";
 const COUNTER = "ponmlkjihgfedcbaponmlkjihgfedcba";
 const POPUP = `chrome-extension://${BLOCKER}/popup.html`;
+/** Blocker's popup, open. */
+const OPEN: ExtensionPopup = { id: BLOCKER, popup: POPUP };
 
 /** An extension whose click opens its popup. */
 const blocker: Extension = {
@@ -84,8 +89,8 @@ const popupView = (): Promise<HTMLWebViewElement> =>
 /** The action with `opened` open; resolves with the next `opened` requested. */
 const trayAsking = (
   extension: Extension,
-  opened: string | undefined,
-): Promise<string | undefined> =>
+  opened: ExtensionPopup | undefined,
+): Promise<ExtensionPopup | undefined> =>
   new Promise((resolve) => {
     render(
       <ExtensionAction
@@ -167,7 +172,7 @@ describe("ExtensionAction", () => {
           domicile={NO_DOMICILE}
           extension={blocker}
           onOpen={() => undefined}
-          opened={BLOCKER}
+          opened={OPEN}
         />,
       );
 
@@ -180,7 +185,7 @@ describe("ExtensionAction", () => {
           domicile={NO_DOMICILE}
           extension={blocker}
           onOpen={() => undefined}
-          opened={BLOCKER}
+          opened={OPEN}
         />,
       );
 
@@ -193,7 +198,7 @@ describe("ExtensionAction", () => {
           domicile={NO_DOMICILE}
           extension={blocker}
           onOpen={() => undefined}
-          opened={BLOCKER}
+          opened={OPEN}
         />,
       );
 
@@ -208,7 +213,7 @@ describe("ExtensionAction", () => {
           domicile={NO_DOMICILE}
           extension={blocker}
           onOpen={() => undefined}
-          opened={BLOCKER}
+          opened={OPEN}
         />,
       );
       const view = await popupView();
@@ -242,7 +247,7 @@ describe("ExtensionAction", () => {
           domicile={NO_DOMICILE}
           extension={blocker}
           onOpen={() => undefined}
-          opened={BLOCKER}
+          opened={OPEN}
         />,
       );
       const view = await popupView();
@@ -287,7 +292,7 @@ describe("ExtensionAction", () => {
         screen.getByRole("button", { name: "Blocker: on for this site" }),
       );
 
-      expect(await asked).toBe(BLOCKER);
+      expect(await asked).toStrictEqual(OPEN);
     });
 
     it("activates an extension as it opens its popup, and not as it closes it", async () => {
@@ -312,7 +317,7 @@ describe("ExtensionAction", () => {
           domicile={recordingDomicile(activated)}
           extension={blocker}
           onOpen={() => undefined}
-          opened={BLOCKER}
+          opened={OPEN}
         />,
       );
       await popupView();
@@ -323,7 +328,7 @@ describe("ExtensionAction", () => {
 
     it("activates an extension that has none, and opens nothing", async () => {
       const activated: string[] = [];
-      const opened: (string | undefined)[] = [];
+      const opened: (ExtensionPopup | undefined)[] = [];
       render(
         <ExtensionAction
           domicile={recordingDomicile(activated)}
@@ -342,9 +347,27 @@ describe("ExtensionAction", () => {
     });
   });
 
+  describe("a popup its extension asked for", () => {
+    it("is drawn, though the action names none", async () => {
+      // Phantom clears its action's popup, so a click reaches
+      // `action.onClicked`, and opens the popup with `action.openPopup()`.
+      const popup = `chrome-extension://${COUNTER}/popup.html`;
+      render(
+        <ExtensionAction
+          domicile={NO_DOMICILE}
+          extension={counter}
+          onOpen={() => undefined}
+          opened={{ id: COUNTER, popup }}
+        />,
+      );
+
+      expect((await popupView()).getAttribute("src")).toBe(popup);
+    });
+  });
+
   describe("closing the popup", () => {
     it("closes when the popup closes itself", async () => {
-      const asked = trayAsking(blocker, BLOCKER);
+      const asked = trayAsking(blocker, OPEN);
 
       fireEvent(
         await popupView(),
@@ -355,7 +378,7 @@ describe("ExtensionAction", () => {
     });
 
     it("closes on Escape", async () => {
-      const asked = trayAsking(blocker, BLOCKER);
+      const asked = trayAsking(blocker, OPEN);
 
       await userEvent.keyboard("{Escape}");
 
@@ -363,7 +386,7 @@ describe("ExtensionAction", () => {
     });
 
     it("closes on a press outside it", async () => {
-      const asked = trayAsking(blocker, BLOCKER);
+      const asked = trayAsking(blocker, OPEN);
 
       await userEvent.click(document.body);
 
@@ -373,7 +396,7 @@ describe("ExtensionAction", () => {
     it("closes when a click lands in a page outside it", async () => {
       const page = document.createElement("webview");
       document.body.append(page);
-      const asked = trayAsking(blocker, BLOCKER);
+      const asked = trayAsking(blocker, OPEN);
       await popupView();
 
       fireEvent.focusIn(page);
@@ -383,7 +406,7 @@ describe("ExtensionAction", () => {
     });
 
     it("stays open when a click lands in its own popup", async () => {
-      let asked: string | undefined | null = null;
+      let asked: ExtensionPopup | undefined | null = null;
       render(
         <ExtensionAction
           domicile={NO_DOMICILE}
@@ -391,7 +414,7 @@ describe("ExtensionAction", () => {
           onOpen={(id) => {
             asked = id;
           }}
-          opened={BLOCKER}
+          opened={OPEN}
         />,
       );
 
@@ -408,7 +431,7 @@ describe("ExtensionAction", () => {
           domicile={NO_DOMICILE}
           extension={blocker}
           onOpen={() => undefined}
-          opened={BLOCKER}
+          opened={OPEN}
         />,
       );
 
@@ -425,7 +448,7 @@ describe("ExtensionAction", () => {
           domicile={NO_DOMICILE}
           extension={blocker}
           onOpen={() => undefined}
-          opened={BLOCKER}
+          opened={OPEN}
         />,
       );
       askCamera(await popupView(), answers);
@@ -448,7 +471,7 @@ describe("ExtensionAction", () => {
           domicile={NO_DOMICILE}
           extension={blocker}
           onOpen={() => undefined}
-          opened={BLOCKER}
+          opened={OPEN}
         />,
       );
       fireEvent(
@@ -486,7 +509,7 @@ describe("ExtensionAction", () => {
           domicile={NO_DOMICILE}
           extension={blocker}
           onOpen={() => undefined}
-          opened={BLOCKER}
+          opened={OPEN}
         />,
       );
       fireEvent(

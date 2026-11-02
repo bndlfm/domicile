@@ -262,6 +262,11 @@
   attribute EventHandler onnotificationschanged;
   readonly attribute FrozenArray<DomicileExtension>? extensions;
   attribute EventHandler onextensionschanged;
+  // An extension called `action.openPopup()`, as a
+  // DomicileExtensionPopupEvent. The shell opens the popup it names as it
+  // opens a clicked action's. Not held for a late listener: a popup the user
+  // did not see asked for is not one to open later.
+  attribute EventHandler onextensionpopuprequested;
   readonly attribute boolean? idle;
   attribute EventHandler onidlechanged;
   readonly attribute boolean? locked;

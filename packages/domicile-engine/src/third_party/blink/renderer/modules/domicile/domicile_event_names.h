@@ -21,28 +21,29 @@
 // scripts/test-engine-event-names.sh keeps this list, the IDL's on<name>
 // handlers and the list guard-windows-state fires in a real engine the same
 // set.
-#define DOMICILE_EVENT_NAMES(X)                   \
-  X(shortcut, Shortcut)                           \
-  X(shortcutrelease, Shortcutrelease)             \
-  X(focusrequested, Focusrequested)               \
-  X(displayschanged, Displayschanged)             \
-  X(browserwindowschanged, Browserwindowschanged) \
-  X(castsinkschanged, Castsinkschanged)           \
-  X(windowschanged, Windowschanged)               \
-  X(focusedwindowchanged, Focusedwindowchanged)   \
-  X(clipboardchanged, Clipboardchanged)           \
-  X(traychanged, Traychanged)                     \
-  X(notificationschanged, Notificationschanged)   \
-  X(extensionschanged, Extensionschanged)         \
-  X(idlechanged, Idlechanged)                     \
-  X(lockedchanged, Lockedchanged)                 \
-  X(themechanged, Themechanged)                   \
-  X(windowsthemechanged, Windowsthemechanged)     \
-  X(modifierschanged, Modifierschanged)           \
-  X(appearancechanged, Appearancechanged)         \
-  X(shelloptionschanged, Shelloptionschanged)     \
-  X(system, System)                               \
-  X(portalrequests, Portalrequests)               \
+#define DOMICILE_EVENT_NAMES(X)                       \
+  X(shortcut, Shortcut)                               \
+  X(shortcutrelease, Shortcutrelease)                 \
+  X(focusrequested, Focusrequested)                   \
+  X(displayschanged, Displayschanged)                 \
+  X(browserwindowschanged, Browserwindowschanged)     \
+  X(castsinkschanged, Castsinkschanged)               \
+  X(windowschanged, Windowschanged)                   \
+  X(focusedwindowchanged, Focusedwindowchanged)       \
+  X(clipboardchanged, Clipboardchanged)               \
+  X(traychanged, Traychanged)                         \
+  X(notificationschanged, Notificationschanged)       \
+  X(extensionschanged, Extensionschanged)             \
+  X(extensionpopuprequested, Extensionpopuprequested) \
+  X(idlechanged, Idlechanged)                         \
+  X(lockedchanged, Lockedchanged)                     \
+  X(themechanged, Themechanged)                       \
+  X(windowsthemechanged, Windowsthemechanged)         \
+  X(modifierschanged, Modifierschanged)               \
+  X(appearancechanged, Appearancechanged)             \
+  X(shelloptionschanged, Shelloptionschanged)         \
+  X(system, System)                                   \
+  X(portalrequests, Portalrequests)                   \
   X(compositorreplaced, Compositorreplaced)
 
 namespace blink::domicile_event_names {

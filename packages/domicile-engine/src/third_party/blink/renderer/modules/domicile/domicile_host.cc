@@ -46,6 +46,7 @@
 #include "third_party/blink/renderer/modules/domicile/domicile_cast_sink.h"
 #include "third_party/blink/renderer/modules/domicile/domicile_display.h"
 #include "third_party/blink/renderer/modules/domicile/domicile_extension.h"
+#include "third_party/blink/renderer/modules/domicile/domicile_extension_popup_event.h"
 #include "third_party/blink/renderer/modules/domicile/domicile_notification.h"
 #include "third_party/blink/renderer/modules/domicile/domicile_notification_action.h"
 #include "third_party/blink/renderer/modules/domicile/domicile_shortcut_event.h"
@@ -1414,6 +1415,12 @@ void DomicileHost::ExtensionsChanged(
   extensions_ =
       MakeGarbageCollected<FrozenArray<DomicileExtension>>(std::move(tray));
   DispatchEvent(*Event::Create(domicile_event_names::Extensionschanged()));
+}
+
+// Dispatched, not held: see onextensionpopuprequested in the IDL.
+void DomicileHost::PopupRequested(const String& id, const String& popup) {
+  DispatchEvent(*MakeGarbageCollected<DomicileExtensionPopupEvent>(
+      domicile_event_names::Extensionpopuprequested(), id, popup));
 }
 
 // An answer to searchFiles(): it settles the promise that asked it.
