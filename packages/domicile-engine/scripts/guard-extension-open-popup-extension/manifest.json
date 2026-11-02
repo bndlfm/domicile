@@ -1,0 +1,15 @@
+{
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Domicile open popup guard"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "description": "An action that opens its popup with action.openPopup() from action.onClicked, as Phantom does, for guard-extension-open-popup.sh.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwIft0SVdiHBpRMddG1JcJsImGdQ2W0gA9s47ArPQUPEXoEk58fVM2tdky/jZVkWld5jRKRmTf+XZRQNruT+rrB+b9QQGU5hvv+2bB8UD+/CiHMMxNAijwyIWmJK6eN5ulKY7PtXVQQ0KFEGgftemWK1bkOngvYwZ4oKXmNBPwZeXj6YgSIsDo4rwX4tuO/D8sAsDOffNZUKsu+st2/vlGplYOvignAhj1rSwERW5wBKZA1xrmOzPbZ/jN8636c0uSqs7zMMuSdrM9EyWffnt2jJkVoY+gTN7i8NWXbWsyR3vqGD6rlDgt0yXdtLW0tOYeLx3TDewFTtAYFfXGHclkQIDAQAB",
+  "manifest_version": 3,
+  "name": "Domicile open popup guard",
+  "permissions": ["tabs"],
+  "version": "1"
+}

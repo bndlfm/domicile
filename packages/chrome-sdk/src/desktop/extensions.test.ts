@@ -54,4 +54,20 @@ describe("extensions", () => {
 
     expect(await changed).toBeUndefined();
   });
+
+  it("passes on an extension's request for its popup", async () => {
+    const fake = new FakeDomicileHost();
+    const asked = new Promise((resolve) => {
+      desktop(fake.host).extensions.on("popup", resolve);
+    });
+    fake.dispatch("extensionpopuprequested", {
+      extensionId: action.id,
+      popup: `chrome-extension://${action.id}/popup.html`,
+    });
+
+    expect(await asked).toStrictEqual({
+      id: action.id,
+      popup: `chrome-extension://${action.id}/popup.html`,
+    });
+  });
 });
