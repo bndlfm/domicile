@@ -33,6 +33,9 @@ const PRIMITIVES: Readonly<Record<string, string>> = {
   "unsigned short": "number",
 };
 
+/** Interfaces `lib.dom` declares, which the IDL takes by name. */
+const PLATFORM_TYPES: ReadonlySet<string> = new Set(["DOMRectReadOnly"]);
+
 /** Bases `lib.dom` declares. `EventTarget` is handled by `listeners`. */
 const PLATFORM_BASES: ReadonlySet<string> = new Set(["Event", "EventInit"]);
 
@@ -303,7 +306,7 @@ const namedType = (name: string, names: ReadonlySet<string>): string => {
   const primitive = PRIMITIVES[name];
   if (primitive !== undefined) {
     return primitive;
-  } else if (names.has(name)) {
+  } else if (names.has(name) || PLATFORM_TYPES.has(name)) {
     return name;
   } else {
     throw new Error(`unknown type ${name}`);

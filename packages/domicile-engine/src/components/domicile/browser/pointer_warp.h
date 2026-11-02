@@ -7,7 +7,9 @@
 #include <optional>
 
 #include "ui/gfx/geometry/point.h"
+#include "ui/gfx/geometry/point_f.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/geometry/rect_f.h"
 
 namespace domicile {
 
@@ -25,6 +27,15 @@ namespace domicile {
 std::optional<gfx::Point> PointerWarpTarget(const gfx::Rect& page,
                                             double x,
                                             double y);
+
+// Whether a warp that the page asked to skip over `box` is skipped.
+//
+// The shell warps only when the pointer will not be over the window it
+// focuses. It cannot see the pointer move over a browser window's page, so the
+// browser, which can, makes the last check. `pointer` and `box` are in the
+// page's CSS pixels, edges included; `pointer` is `std::nullopt` off the page.
+bool PointerAlreadyOver(const std::optional<gfx::PointF>& pointer,
+                        const gfx::RectF& box);
 
 }  // namespace domicile
 

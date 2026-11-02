@@ -38,7 +38,8 @@ struct DeskPointerAt {
   bool operator==(const DeskPointerAt&) const = default;
 };
 
-// Where the pointer is on the desk, for the compositor's screen casts.
+// Where the pointer is on the desk, for the compositor's screen casts and the
+// shell's pointer warps.
 //
 // The compositor hears the pointer only over a window, from the shell. Over
 // the shell's page or a browser window it would not know where to draw the
@@ -67,6 +68,10 @@ class DeskPointer {
   // Calls `moved` on each later move.
   ListenerId AddListener(Moved moved);
   void RemoveListener(ListenerId listener);
+
+  // Where the pointer is now, for a warp that stays put over a box. See
+  // `PointerAlreadyOver`.
+  DeskPointerAt Now();
 
   // The pointer is at `at`, or left the desk. A place it is already at tells
   // nobody: aura restates a still pointer after a window changes.

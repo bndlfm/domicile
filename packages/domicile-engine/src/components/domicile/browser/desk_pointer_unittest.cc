@@ -45,6 +45,17 @@ TEST(DeskPointerTest, EveryListenerHearsWhereThePointerIs) {
   EXPECT_EQ(right, expected);
 }
 
+// A warp asks where the pointer is now, since the shell cannot see it over a
+// browser window's page.
+TEST(DeskPointerTest, ItSaysWhereThePointerIsNow) {
+  DeskPointer pointer;
+  EXPECT_EQ(pointer.Now(), Off());
+
+  pointer.MovedTo(On(12.5, 3));
+
+  EXPECT_EQ(pointer.Now(), On(12.5, 3));
+}
+
 // aura restates a still pointer after a window changes; the compositor need
 // not hear it again.
 TEST(DeskPointerTest, APlaceThePointerIsAlreadyAtTellsNobody) {

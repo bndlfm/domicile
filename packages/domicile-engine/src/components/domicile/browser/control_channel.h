@@ -29,6 +29,7 @@
 #include "net/socket/unix_domain_client_socket_posix.h"
 #include "ui/base/cursor/domicile/desk_cursor_image.h"
 #include "ui/base/cursor/domicile/desk_cursor_theme.h"
+#include "ui/gfx/geometry/rect_f.h"
 
 namespace domicile {
 
@@ -54,7 +55,10 @@ using KeymapSink = base::RepeatingCallback<void(const std::string&)>;
 // in a callback rather than in a line of JSON. A page's own coordinates, in
 // CSS pixels, so this target stays free of //ui and of the window the point is
 // clamped into. See components/domicile/browser/pointer_warp.h.
-using PointerWarpSink = base::RepeatingCallback<void(double x, double y)>;
+// `unless_over` is the box the pointer stays put over; see
+// `PointerAlreadyOver`.
+using PointerWarpSink = base::RepeatingCallback<
+    void(double x, double y, const std::optional<gfx::RectF>& unless_over)>;
 
 // How the desktop's theme reaches the color scheme every page in this process
 // is drawn in. A callback for KeymapSink's reason: NativeTheme belongs to the
@@ -131,7 +135,9 @@ class ControlChannel : public mojom::ControlChannel {
   void FocusApp(const std::string& app_id) override;
   void FocusChrome() override;
   void SyncFrames() override;
-  void WarpPointer(double x, double y) override;
+  void WarpPointer(double x,
+                   double y,
+                   const std::optional<gfx::RectF>& unless_over) override;
   void CloseApp(const std::string& app_id) override;
   void SetAppBounds(const std::string& app_id,
                     double x,

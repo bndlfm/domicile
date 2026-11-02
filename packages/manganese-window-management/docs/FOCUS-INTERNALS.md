@@ -7,6 +7,8 @@ How manganese implements the focus behavior in
 
 - The page asks the engine to move the pointer with `warpPointer`, in page
   coordinates. The engine picks the monitor.
+- Each warp carries the new window's frame as `unlessOver`. The engine skips
+  the warp while the pointer is over it.
 - `WindowState.pressed` records the key press, so the page for the newly
   focused screen performs the warp.
 - Code: `src/pointer-warp.ts` and `usePointerWarp.ts`.

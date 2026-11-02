@@ -3,6 +3,7 @@ import type { Domicile } from "@domicile-desktop/sdk/desktop/desktop";
 import { act, fireEvent, renderHook } from "@testing-library/react";
 
 import type { Focus, Shown, Spot } from "./pointer-warp";
+import type { Rect } from "./rect";
 import { usePointerWarp } from "./usePointerWarp";
 
 // Without title bars, so each window's frame is its box.
@@ -18,12 +19,15 @@ const RIGHT = {
 } satisfies Focus;
 
 let warps: Spot[] = [];
+/** Each warp's `unlessOver`, in order. */
+let stayPutOver: (Rect | undefined)[] = [];
 
 /** The part of the host client this hook uses. */
 const recordingDomicile = {
   pointer: {
-    warp: (x: number, y: number) => {
+    warp: (x: number, y: number, unlessOver?: Rect) => {
       warps.push([x, y]);
+      stayPutOver.push(unlessOver);
     },
   },
 } as unknown as Domicile;
@@ -107,6 +111,7 @@ const pointerAt = (x: number, y: number) => {
 
 beforeEach(() => {
   warps = [];
+  stayPutOver = [];
 });
 
 describe("usePointerWarp", () => {
@@ -122,23 +127,24 @@ describe("usePointerWarp", () => {
     expect(warps).toStrictEqual([[600, 350]]);
   });
 
+  it("asks the engine to leave a pointer already over that window", () => {
+    // The page cannot see the pointer over a browser window's page, so the
+    // engine checks.
+    const { rerender, press } = warping(desktopOf(LEFT, BOTH));
+
+    act(() => {
+      press();
+    });
+    rerender(desktopOf(RIGHT, BOTH));
+
+    expect(stayPutOver).toStrictEqual([RIGHT.frame]);
+  });
+
   it("leaves it where it is when the focus moved on its own account", () => {
     // Focus moved because the pointer crossed a window (`onHover` in
     // `Desktop`). Warping here would chase the pointer.
     const { rerender } = warping(desktopOf(LEFT, BOTH));
     pointerAt(600, 350);
-    rerender(desktopOf(RIGHT, BOTH));
-
-    expect(warps).toStrictEqual([]);
-  });
-
-  it("keeps up with the pointer, so a window it is already over moves nothing", () => {
-    const { rerender, press } = warping(desktopOf(LEFT, BOTH));
-    pointerAt(600, 350);
-
-    act(() => {
-      press();
-    });
     rerender(desktopOf(RIGHT, BOTH));
 
     expect(warps).toStrictEqual([]);
@@ -398,26 +404,6 @@ describe("usePointerWarp", () => {
     expect(result.current.pointing([200, 350])).toBe(false);
   });
 
-  it("reads a landing as where the cursor got to", () => {
-    // A landing updates the pointer position, so the next press needs no warp
-    // when the cursor is already inside the target.
-    const { rerender, press } = warping(desktopOf(LEFT, BOTH));
-    pointerAt(200, 300);
-    act(() => {
-      press();
-    });
-    rerender(desktopOf(RIGHT, BOTH));
-    pointerAt(600, 350);
-    warps = [];
-
-    act(() => {
-      press();
-    });
-    rerender(desktopOf({ ...RIGHT, id: "firefox" }, [...BOTH, "firefox"]));
-
-    expect(warps).toStrictEqual([]);
-  });
-
   it("forgets the oldest place once too many go unanswered", () => {
     // Pins the cost of `IN_FLIGHT`: a landing at a dropped target reads as a
     // user move, which clears the remaining targets.
@@ -464,25 +450,6 @@ describe("usePointerWarp", () => {
     rerender(desktopOf({ ...LEFT, id: "firefox" }, [RIGHT.id, "firefox"]));
 
     expect(warps).toStrictEqual([]);
-  });
-
-  it("remembers where it put the pointer", () => {
-    // The engine does not report warps, so the hook records its own targets.
-    // Otherwise the next press would be measured from a stale position.
-    const all = [...BOTH, "firefox"];
-    const { rerender, press } = warping(desktopOf(LEFT, all));
-    pointerAt(200, 300);
-
-    act(() => {
-      press();
-    });
-    rerender(desktopOf(RIGHT, all));
-    act(() => {
-      press();
-    });
-    rerender(desktopOf({ ...RIGHT, id: "firefox" }, all));
-
-    expect(warps).toStrictEqual([[600, 350]]);
   });
 
   describe("a screen with nothing on it", () => {
