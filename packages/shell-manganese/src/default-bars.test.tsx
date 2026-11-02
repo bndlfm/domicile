@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Cast } from "@domicile-desktop/manganese-bar-module-cast";
+import { Downloads } from "@domicile-desktop/manganese-bar-module-downloads";
 import { KeptAwake } from "@domicile-desktop/manganese-bar-module-idle-inhibitor/kept-awake";
 import { Keymap } from "@domicile-desktop/manganese-bar-module-keymap";
 import { Notifications } from "@domicile-desktop/manganese-bar-module-notifications";
@@ -14,11 +15,12 @@ const types = (items: readonly ReactNode[]) =>
   items.map((item) => (isValidElement(item) ? item.type : item));
 
 describe("DEFAULT_BAR", () => {
-  it("is sharing, keep awake, casting, the keymap, quick settings and the bell on the right", () => {
+  it("is sharing, keep awake, casting, downloads, the keymap, quick settings and the bell on the right", () => {
     expect(types(DEFAULT_BAR.right)).toEqual([
       Sharing,
       KeptAwake,
       Cast,
+      Downloads,
       Keymap,
       QuickSettings,
       Notifications,

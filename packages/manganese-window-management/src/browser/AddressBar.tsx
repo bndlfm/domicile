@@ -27,8 +27,6 @@ import { useState } from "react";
 import { css } from "../../styled-system/css";
 import { hstack } from "../../styled-system/patterns";
 import { ConnectionIndicator } from "./ConnectionIndicator";
-import { DownloadIndicator } from "./DownloadIndicator";
-import type { Downloads } from "./downloads";
 import type { MediaDeviceChoice } from "./media-devices";
 import { SitePermissions } from "./SitePermissions";
 import {
@@ -49,8 +47,6 @@ type Props = {
   address: string;
   canGoBack: boolean;
   canGoForward: boolean;
-  /** The page's downloads, shown while any are in progress or finished. */
-  downloads: Downloads;
   /** Keeps the zoom controls at 100%, while the zoom popup hangs from them. */
   holdZoom: boolean;
   /**
@@ -65,10 +61,6 @@ type Props = {
   /** Whether a page is loading, which turns Reload into Stop. */
   loading: boolean;
   onBack: () => void;
-  /** Stops showing the page's finished downloads. */
-  onClearDownloads: () => void;
-  /** Takes the download indicator, for the downloads popup to hang from. */
-  onDownloadsAnchor: (anchor: HTMLElement | null) => void;
   onForward: () => void;
   /** Loads `url`, already resolved from what was typed. */
   onNavigate: (url: string) => void;
@@ -78,8 +70,6 @@ type Props = {
     permission: WebViewPermission,
     setting: WebViewPermissionSetting,
   ) => void;
-  /** Shows the finished downloads' popup. */
-  onShowDownloads: () => void;
   onStop: () => void;
   /** Takes the zoom controls, for the zoom popup to hang from. */
   onZoomAnchor: (anchor: HTMLElement | null) => void;
@@ -100,8 +90,8 @@ type Props = {
 
 /**
  * A browser window's toolbar: history controls, a private label for a private
- * window, address field with the connection and site permissions, zoom, and
- * downloads while any are in progress or finished and not cleared.
+ * window, address field with the connection and site permissions, and zoom.
+ * The desk's downloads show on the bar instead.
  *
  * Follows Chromium's layout, which users already know.
  */
@@ -109,20 +99,16 @@ export const AddressBar = ({
   address,
   canGoBack,
   canGoForward,
-  downloads,
   holdZoom,
   isPrivate,
   loadProgress,
   loading,
   mediaDevices,
   onBack,
-  onClearDownloads,
-  onDownloadsAnchor,
   onForward,
   onNavigate,
   onReload,
   onSetSitePermission,
-  onShowDownloads,
   onStop,
   onZoomAnchor,
   onZoomIn,
@@ -275,14 +261,6 @@ export const AddressBar = ({
             <AnimatedPlusIcon size={12} weight="bold" />
           </Button>
         </div>
-      )}
-      {downloads.count === 0 && downloads.completed === 0 ? undefined : (
-        <DownloadIndicator
-          downloads={downloads}
-          onClear={onClearDownloads}
-          onShow={onShowDownloads}
-          ref={onDownloadsAnchor}
-        />
       )}
       {loading && (
         <div

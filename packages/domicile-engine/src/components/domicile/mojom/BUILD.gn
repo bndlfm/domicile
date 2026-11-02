@@ -15,6 +15,7 @@ mojom("mojom") {
     "browser_windows.mojom",
     "cast_sinks.mojom",
     "control_channel.mojom",
+    "downloads.mojom",
     "extension_tray.mojom",
     "external_surface.mojom",
     "frame_sink_broker.mojom",
