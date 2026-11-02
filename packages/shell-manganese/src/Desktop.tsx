@@ -20,8 +20,8 @@ import type { KeymapOptions } from "@domicile-desktop/manganese-bar-module-keyma
 import { KeymapOptionsContext } from "@domicile-desktop/manganese-bar-module-keymap/keymap-options";
 import { PortalSignIn } from "@domicile-desktop/manganese-bar-module-network/PortalSignIn";
 import { useCaptivePortal } from "@domicile-desktop/manganese-bar-module-network/useCaptivePortal";
-import { popupShown } from "@domicile-desktop/manganese-bar-module-tray/extensions/shown";
 import { useExtensions } from "@domicile-desktop/manganese-bar-module-tray/extensions/useExtensions";
+import { useOpenedPopup } from "@domicile-desktop/manganese-bar-module-tray/extensions/useOpenedPopup";
 import type { TrayState } from "@domicile-desktop/manganese-bar-module-tray/tray-context";
 import { TrayContext } from "@domicile-desktop/manganese-bar-module-tray/tray-context";
 import { trayEntries } from "@domicile-desktop/manganese-bar-module-tray/tray-entry";
@@ -325,23 +325,10 @@ export const Desktop = ({
   });
 
   // The open extension popup and the bar it belongs to.
-  const [opened, setOpened] = useState<
-    { extension: string; screen: string } | undefined
-  >(undefined);
-  // Cleared once the tray stops showing it, so a later `action.enable()` does
-  // not reopen it. Set during render (React's pattern for derived state) so no
-  // frame shows the stale popup.
-  const popupOpen = popupShown(extensions, opened?.extension);
-  if (opened !== undefined && !popupOpen) {
-    setOpened(undefined);
-  }
-  const openExtension = useCallback(
-    (screen: string, extension: string | undefined) => {
-      setOpened((now) =>
-        extension === undefined ? closedOn(now, screen) : { extension, screen },
-      );
-    },
-    [],
+  const { open: openExtension, opened } = useOpenedPopup(
+    domicile,
+    extensions,
+    windows.focused,
   );
 
   const volumeKeys = useVolumeKeys(deskSound(domicile));
@@ -617,7 +604,7 @@ export const Desktop = ({
           behindPanel={
             windows.launcherOpen ||
             windows.clipboardOpen ||
-            popupOpen ||
+            opened !== undefined ||
             portal.url !== undefined ||
             notificationsOpen ||
             heldPanels > 0 ||
@@ -880,13 +867,6 @@ const launch = (
     }
   }
 };
-
-/** The open popup, after bar `screen` closes its own. */
-const closedOn = (
-  opened: { extension: string; screen: string } | undefined,
-  screen: string,
-): { extension: string; screen: string } | undefined =>
-  opened?.screen === screen ? undefined : opened;
 
 /**
  * What each window's chrome does, as `Stage` takes it: every action goes

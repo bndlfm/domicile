@@ -1,0 +1,20 @@
+// Copyright 2026 Connor Prussin
+// SPDX-License-Identifier: MIT
+
+// The event behind DomicileHost.onextensionpopuprequested: an extension called
+// `action.openPopup()`.
+[
+    RuntimeEnabled=DomicileControlChannel,
+    Exposed=Window
+] interface DomicileExtensionPopupEvent : Event {
+  constructor(DOMString type,
+              optional DomicileExtensionPopupEventInit eventInitDict = {});
+
+  // The extension: the id its `extensions` entry has.
+  readonly attribute DOMString extensionId;
+
+  // The popup to open, a chrome-extension:// URL. Carried here rather than
+  // read from the entry, because an extension may clear its popup again as
+  // soon as the call answers.
+  readonly attribute DOMString popup;
+};

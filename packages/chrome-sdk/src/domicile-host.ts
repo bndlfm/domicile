@@ -93,6 +93,11 @@ export type DomicileAppEventInit = EventInit & {
   appId?: string;
 };
 
+export type DomicileExtensionPopupEventInit = EventInit & {
+  extensionId?: string;
+  popup?: string;
+};
+
 /** A request header `DomicileHost.fetchWithCookies()` sends. */
 export type DomicileFetchHeader = {
   name: string;
@@ -389,6 +394,21 @@ export type DomicileExtension = {
   readonly enabled: boolean;
 };
 
+/**
+ * The event behind DomicileHost.onextensionpopuprequested: an extension called
+ * `action.openPopup()`.
+ */
+export type DomicileExtensionPopupEvent = Event & {
+  /** The extension: the id its `extensions` entry has. */
+  readonly extensionId: string;
+  /**
+   * The popup to open, a chrome-extension:// URL. Carried here rather than
+   * read from the entry, because an extension may clear its popup again as
+   * soon as the call answers.
+   */
+  readonly popup: string;
+};
+
 /** Every event `DomicileHost` fires, by name. */
 export type DomicileHostEventMap = {
   /** A grabbed shortcut fired, as a DomicileShortcutEvent. */
@@ -425,6 +445,13 @@ export type DomicileHostEventMap = {
   traychanged: Event;
   notificationschanged: Event;
   extensionschanged: Event;
+  /**
+   * An extension called `action.openPopup()`, as a
+   * DomicileExtensionPopupEvent. The shell opens the popup it names as it
+   * opens a clicked action's. Not held for a late listener: a popup the user
+   * did not see asked for is not one to open later.
+   */
+  extensionpopuprequested: DomicileExtensionPopupEvent;
   idlechanged: Event;
   lockedchanged: Event;
   themechanged: Event;

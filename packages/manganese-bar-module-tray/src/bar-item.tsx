@@ -17,10 +17,10 @@ export const Tray = () => {
       extensions={extensions}
       items={items}
       onMove={order.move}
-      onOpen={(extension) => {
-        open(screen, extension);
+      onOpen={(popup) => {
+        open(screen, popup);
       }}
-      opened={opened?.screen === screen ? opened.extension : undefined}
+      opened={opened?.screen === screen ? opened : undefined}
       order={order.order}
     />
   );

@@ -33,6 +33,7 @@
     ".": "./src/bar-item.tsx",
     "./extensions/shown": "./src/extensions/shown.ts",
     "./extensions/useExtensions": "./src/extensions/useExtensions.ts",
+    "./extensions/useOpenedPopup": "./src/extensions/useOpenedPopup.ts",
     "./tray-context": "./src/tray-context.ts",
     "./tray-entry": "./src/tray-entry.ts",
     "./useTray": "./src/useTray.ts",

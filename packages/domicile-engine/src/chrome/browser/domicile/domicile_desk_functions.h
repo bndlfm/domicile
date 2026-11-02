@@ -6,9 +6,9 @@
 
 namespace domicile {
 
-// Registers the desk's chrome.tabs and chrome.windows functions in place of
-// Chrome's. ExtensionFunctionRegistry::Register replaces entries by name, so
-// Chrome's code needs no patch.
+// Registers the desk's chrome.tabs, chrome.windows and action.openPopup
+// functions in place of Chrome's. ExtensionFunctionRegistry::Register replaces
+// entries by name, so Chrome's code needs no patch.
 //
 // Each call acts where its target lives (docs/architecture/EXTENSIONS.md#tabs):
 //
@@ -34,6 +34,9 @@ namespace domicile {
 //   windows.get, getCurrent,      the desk's window and its popup windows.
 //   getLastFocused, getAll        "Current" is the caller's tab's window, or
 //                                 the desk's for a caller in no tab
+//   action.openPopup              the shell's tray, as
+//                                 `extensionpopuprequested`. Answered once the
+//                                 shell is asked
 //   RefusedOnDesk()               `not supported on a Domicile desk`
 //
 // Other functions (tabs.get, reload, sendMessage, executeScript, goBack) are

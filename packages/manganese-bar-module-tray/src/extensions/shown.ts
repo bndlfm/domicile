@@ -8,13 +8,12 @@ export const shownInTray = (
 /**
  * Whether the tray draws the popup of the extension `opened` names.
  *
- * An action disabled or removed while its popup is open hides the popup. The
- * desktop reads this, not its own request, to decide who has the keyboard.
+ * An action disabled or removed while its popup is open hides the popup. One
+ * that names no popup still draws the one its extension asked for with
+ * `action.openPopup()`. The desktop reads this, not its own request, to decide
+ * who has the keyboard.
  */
 export const popupShown = (
   extensions: readonly Extension[],
   opened: string | undefined,
-): boolean =>
-  shownInTray(extensions).some(
-    ({ id, popup }) => id === opened && popup !== undefined,
-  );
+): boolean => shownInTray(extensions).some(({ id }) => id === opened);

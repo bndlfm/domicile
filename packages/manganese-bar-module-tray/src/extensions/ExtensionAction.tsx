@@ -9,7 +9,10 @@ import { useDeviceRequest } from "@domicile-desktop/manganese-page-requests/useD
 import { useDialogRequest } from "@domicile-desktop/manganese-page-requests/useDialogRequest";
 import { usePermissionRequest } from "@domicile-desktop/manganese-page-requests/usePermissionRequest";
 import type { Domicile } from "@domicile-desktop/sdk/desktop/desktop";
-import type { Extension } from "@domicile-desktop/sdk/extension";
+import type {
+  Extension,
+  ExtensionPopup,
+} from "@domicile-desktop/sdk/extension";
 import { WEBVIEW_CLOSE_EVENT } from "@domicile-desktop/sdk/webview-element";
 import { useEffect, useState } from "react";
 import { css } from "../../styled-system/css";
@@ -22,13 +25,12 @@ type Props = {
   /** Extension this action belongs to. */
   extension: Extension;
   /**
-   * Requests the popup of the extension with this id, or `undefined` to close
-   * it. The desktop decides, because an open popup takes the keyboard from
-   * the windows (see `AppWindow`).
+   * Requests a popup, or `undefined` to close it. The desktop decides, because
+   * an open popup takes the keyboard from the windows (see `AppWindow`).
    */
-  onOpen: (id: string | undefined) => void;
-  /** Id of the extension whose popup is open, if any. */
-  opened: string | undefined;
+  onOpen: (popup: ExtensionPopup | undefined) => void;
+  /** The open popup on this bar, any extension's. */
+  opened: ExtensionPopup | undefined;
 };
 
 /**
@@ -37,7 +39,9 @@ type Props = {
  * Every click calls `extensions.activate`, which grants `activeTab` on the
  * focused browser window. An action with a popup then opens it in a
  * `<webview>` panel; the engine dispatches `action.onClicked` for one without.
- * The panel is withheld until the popup's page has loaded, as Chrome's is.
+ * The panel also opens for a popup its extension asked for with
+ * `action.openPopup()`, which `opened` carries. It is withheld until the
+ * popup's page has loaded, as Chrome's is.
  *
  * The panel closes on an outside press, Escape, or the popup's
  * `window.close()`. Escape works only while the shell page has the keyboard,
@@ -53,28 +57,22 @@ export const ExtensionAction = ({
   // `null` because React passes it to a callback ref on unmount.
   const [view, setView] = useState<HTMLWebViewElement | null>(null);
   const shown = useShown(view);
-  return popup === undefined ? (
-    <Button
-      label={extension.title}
-      onClick={() => {
-        domicile.extensions.activate(id);
-      }}
-      size="sm"
-      variant="ghost"
-    >
-      <Icon extension={extension} />
-    </Button>
-  ) : (
+  const shownPopup = opened?.id === id ? opened.popup : undefined;
+  return (
     <Popover
       align="start"
       flush
-      onOpenChange={(open) => {
-        if (open) {
+      onOpenChange={(opening) => {
+        if (opening) {
           domicile.extensions.activate(id);
+          if (popup !== undefined) {
+            onOpen({ id, popup });
+          }
+        } else {
+          onOpen(undefined);
         }
-        onOpen(open ? id : undefined);
       }}
-      open={opened === id}
+      open={shownPopup !== undefined}
       side="bottom"
       trigger={
         <Button label={extension.title} size="sm" variant="ghost">
@@ -83,15 +81,17 @@ export const ExtensionAction = ({
       }
       withheld={!shown}
     >
-      <PopupView
-        name={extension.name}
-        onClose={() => {
-          onOpen(undefined);
-        }}
-        popup={popup}
-        setView={setView}
-        view={view}
-      />
+      {shownPopup !== undefined && (
+        <PopupView
+          name={extension.name}
+          onClose={() => {
+            onOpen(undefined);
+          }}
+          popup={shownPopup}
+          setView={setView}
+          view={view}
+        />
+      )}
     </Popover>
   );
 };

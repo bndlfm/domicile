@@ -37,3 +37,11 @@ export const extensionSchema = z.object({
 });
 
 export type Extension = z.infer<typeof extensionSchema>;
+
+/** An extension's `action.openPopup()`: the popup to open, and whose. */
+export const extensionPopupSchema = z.object({
+  id: z.string().regex(EXTENSION_ID),
+  popup: z.string().startsWith("chrome-extension://"),
+});
+
+export type ExtensionPopup = z.infer<typeof extensionPopupSchema>;

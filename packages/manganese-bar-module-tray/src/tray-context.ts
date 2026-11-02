@@ -1,9 +1,13 @@
 // The tray's state, held once for every bar's tray.
 
 import { useProvided } from "@domicile-desktop/manganese-host/use-provided";
-import type { Extension } from "@domicile-desktop/sdk/extension";
+import type {
+  Extension,
+  ExtensionPopup,
+} from "@domicile-desktop/sdk/extension";
 import type { TrayItem } from "@domicile-desktop/sdk/tray";
 import { createContext } from "react";
+import type { OpenedPopup } from "./extensions/useOpenedPopup";
 import type { TrayOrder } from "./useTrayOrder";
 
 export type TrayState = {
@@ -12,9 +16,9 @@ export type TrayState = {
   /** The applications' tray icons. */
   items: readonly TrayItem[];
   /** Open an extension's popup on `screen`, or close it with `undefined`. */
-  open: (screen: string, extension: string | undefined) => void;
+  open: (screen: string, popup: ExtensionPopup | undefined) => void;
   /** The open extension popup and the screen it is on. */
-  opened: { extension: string; screen: string } | undefined;
+  opened: OpenedPopup | undefined;
   /** The icon order, shared so a drag on one bar reorders every bar. */
   order: TrayOrder;
 };
