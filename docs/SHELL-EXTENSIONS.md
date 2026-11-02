@@ -76,6 +76,12 @@ does, so `scripting.executeScript` and `tab.url` work there. Then:
 - **A `popup`:** open a `<webview extensionpopup>` at that URL in a panel
   under the icon.
 
+An extension can also ask for its popup with `action.openPopup()`. Phantom
+does this from `action.onClicked`, so its row has no `popup`.
+`extensions.on("popup", ({ id, popup }) => …)` reports the request: open
+`popup` under `id`'s icon as for a click. The request carries the URL because
+the extension may clear its row's `popup` straight after.
+
 <!-- tab: React -->
 
 ```tsx
@@ -142,6 +148,7 @@ The browser carries out some extension calls. Others fire an event on a
 | `tabs.remove(id)` | That browser window closes. A view of your own fires `domicile-close` ([Close requests](SHELL-BROWSER-WINDOWS.md#close-requests)) |
 | `tabs.update(id, {active: true})`, `windows.update(id, {focused: true})` | `domicile-focus-request` (`WEBVIEW_FOCUS_REQUEST_EVENT`): raise that window |
 | `tabs.setZoom(id, factor)` | `domicile-zoom-change`: already applied |
+| `action.openPopup()` | `extensions.on("popup")`: open that popup ([A click](#a-click)) |
 
 Calls with no desktop meaning (`tabs.move`, `tabs.group`, `tabs.discard`, …)
 fail with `not supported on a Domicile desk`.

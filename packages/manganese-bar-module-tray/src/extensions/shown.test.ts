@@ -24,6 +24,9 @@ describe("popupShown", () => {
     expect(popupShown([extension], undefined)).toBe(false);
     expect(popupShown([], ID)).toBe(false);
     expect(popupShown([{ ...extension, enabled: false }], ID)).toBe(false);
-    expect(popupShown([{ ...extension, popup: undefined }], ID)).toBe(false);
+  });
+
+  it("draws a popup its extension asked for, though the action names none", () => {
+    expect(popupShown([{ ...extension, popup: undefined }], ID)).toBe(true);
   });
 });

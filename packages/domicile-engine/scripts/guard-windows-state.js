@@ -39,6 +39,7 @@ const EVENT_NAMES = [
   "traychanged",
   "notificationschanged",
   "extensionschanged",
+  "extensionpopuprequested",
   "idlechanged",
   "lockedchanged",
   "themechanged",

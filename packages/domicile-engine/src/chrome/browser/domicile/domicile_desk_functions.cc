@@ -16,16 +16,20 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/types/expected.h"
 #include "base/values.h"
+#include "chrome/browser/domicile/domicile_extension_tray.h"
 #include "chrome/browser/domicile/domicile_window_controller.h"
 #include "chrome/browser/extensions/extension_tab_util.h"
 #include "chrome/common/extensions/api/tabs.h"
 #include "chrome/common/extensions/api/windows.h"
 #include "components/domicile/browser/desk_tabs.h"
 #include "components/domicile/browser/web_view_guest.h"
+#include "components/sessions/content/session_tab_helper.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/web_contents.h"
+#include "extensions/browser/extension_action.h"
+#include "extensions/browser/extension_action_manager.h"
 #include "extensions/browser/extension_function.h"
 #include "extensions/browser/extension_function_registry.h"
 #include "extensions/common/error_utils.h"
@@ -49,6 +53,14 @@ constexpr char kTabNotFoundError[] = "No tab with id: *.";
 // Returned when the desk has no tab to ask the shell through.
 constexpr char kNoWindowToAskError[] =
     "No browser window on this Domicile desk to ask the shell through.";
+
+// action.openPopup's errors, in Chrome's words.
+constexpr char kNoActiveWindowFound[] =
+    "Could not find an active browser window.";
+constexpr char kNoToolbar[] = "Browser window has no toolbar.";
+constexpr char kNoActivePopup[] =
+    "Extension does not have a popup on the active tab.";
+constexpr char kFailedToOpenPopup[] = "Failed to open popup.";
 
 // Returned for a zoom factor outside blink's browser range, which the
 // <webview> element's own setZoom also enforces.
@@ -765,6 +777,69 @@ class DeskWindowsRemoveFunction : public ExtensionFunction {
   }
 };
 
+// action.openPopup: the shell's tray opens the popup, since the desk has no
+// toolbar. Answers once the shell is asked, not once the popup has loaded as
+// Chrome's does: the request carries the popup's URL, so an extension that
+// clears its popup after the call still gets the one it asked for.
+class DeskActionOpenPopupFunction : public ExtensionFunction {
+ public:
+  DECLARE_EXTENSION_FUNCTION("action.openPopup", ACTION_OPENPOPUP)
+
+ private:
+  ~DeskActionOpenPopupFunction() override = default;
+
+  ResponseAction Run() override {
+    // Validated as Chrome's is: the action API's types are not compiled.
+    EXTENSION_FUNCTION_VALIDATE(args().size() == 1u);
+    EXTENSION_FUNCTION_VALIDATE(extension());
+    std::optional<int> window_id;
+    if (args()[0].is_dict()) {
+      const base::Value* value = args()[0].GetDict().Find("windowId");
+      if (value != nullptr) {
+        EXTENSION_FUNCTION_VALIDATE(value->is_int());
+        window_id = value->GetInt();
+      }
+    }
+
+    // The current window is the desk's, as Chrome's is the active browser
+    // window rather than the caller's.
+    DomicileWindowController* desk = DeskOf(*this);
+    if (desk == nullptr) {
+      return RespondNow(Error(kNoActiveWindowFound));
+    }
+    DomicileWindowController* window =
+        !window_id.has_value() || *window_id == kCurrentWindowId
+            ? desk
+            : desk->WindowWithId(*window_id);
+    if (window == nullptr) {
+      return RespondNow(Error(WindowNotFound(*window_id)));
+    }
+    if (window->IsPopup()) {
+      return RespondNow(Error(kNoToolbar));
+    }
+
+    extensions::ExtensionAction* action =
+        extensions::ExtensionActionManager::Get(browser_context())
+            ->GetExtensionAction(*extension());
+    // The bindings expose `action` only to an extension that has one.
+    CHECK(action);
+    content::WebContents* tab = desk->GetActiveTab();
+    const int tab_id = tab == nullptr
+                           ? extensions::ExtensionAction::kDefaultTabId
+                           : sessions::SessionTabHelper::IdForTab(tab).id();
+    if (!action->HasPopup(tab_id) ||
+        !action->GetIsVisibleIgnoringDeclarative(tab_id)) {
+      return RespondNow(Error(kNoActivePopup));
+    }
+
+    if (!RequestExtensionPopup(browser_context(), extension_id(),
+                               action->GetPopupUrl(tab_id))) {
+      return RespondNow(Error(kFailedToOpenPopup));
+    }
+    return RespondNow(NoArguments());
+  }
+};
+
 }  // namespace
 
 void RegisterDeskFunctions() {
@@ -785,6 +860,7 @@ void RegisterDeskFunctions() {
   registry.RegisterFunction<DeskWindowsUpdateFunction>();
   registry.RegisterFunction<DeskWindowsCreateFunction>();
   registry.RegisterFunction<DeskWindowsRemoveFunction>();
+  registry.RegisterFunction<DeskActionOpenPopupFunction>();
   // Histogram UNKNOWN, so refusals are not counted as the refused calls.
   for (const char* name : RefusedOnDesk()) {
     registry.Register(ExtensionFunctionRegistry::FactoryEntry(
