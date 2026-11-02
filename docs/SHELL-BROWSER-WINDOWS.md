@@ -206,7 +206,6 @@ stale state.
 | `canGoBack`, `canGoForward` | `domicile-history-change` | Whether back and forward would move |
 | `loading` | `domicile-loading-change` | Whether the page is loading, as a browser's spinner shows. Same-document navigations (fragment, `pushState`) do not count |
 | `loadProgress` | `domicile-load-progress-change` | How far the page has loaded, from 0.1 to 1. Read it only while `loading` |
-| `downloadCount`, `downloadReceivedBytes`, `downloadTotalBytes`, `downloadCompletedCount`, `downloadCompletedPaths` | `domicile-downloads-change` | The page's downloads in progress, their bytes received and expected, and how many finished and where they were saved. Total is 0 when any size is unknown. A download counts once the shell picks where it goes. Finished ones count until `clearCompletedDownloads()`, or `removeCompletedDownload(path)` for one |
 | `url`, `security` | `domicile-page-change` | The address the page is at, and its connection security |
 | `zoom` | `domicile-zoom-change` | Zoom factor; 1 is 100% |
 | `favicon` | `domicile-favicon-change` | Icon URL, or `""` |
@@ -553,11 +552,32 @@ frame.addEventListener(WEBVIEW_FILE_CHOOSER_EVENT, (event) => {
   lists extensions without the dot (empty means any). `suggestedName` is for
   saves.
 - **Downloads:** every download asks, in `save` mode. Canceling saves
-  nothing.
+  nothing. The download is then listed in `domicile.downloads`; see
+  [Downloads](#downloads).
 - **A ready-made picker:** `@domicile-desktop/component-library/FilePicker`
   takes a `FileRequest`. Manganese builds one from the event in
   `window-management/browser/file-request.ts`. It asks before a save
   replaces a file.
+
+## Downloads
+
+`domicile.downloads` lists the desk's downloads, oldest first: every download
+a browser window's page started while the engine runs. A download stays listed
+after its window closes. The list is the engine's, so every shell document
+sees the same one.
+
+- **Listed** once the shell picks where it goes. A download canceled in the
+  picker is never listed.
+- **Each download:** `id`, `state` (`InProgress`, `Complete` or `Failed`),
+  `path`, `receivedBytes`, `totalBytes` (0 when the server sent no size),
+  `window` (the browser window that started it, or `undefined`) and `page`.
+- **`cancel(id)`** stops a download in progress; it leaves the list.
+- **`remove(id)`** and **`clear()`** take finished and failed downloads off
+  the list. The files stay.
+- **`on("change")`** fires on every change, including progress.
+- Downloads from an earlier run of the engine are not listed.
+
+Manganese draws the list as a bar item: `@domicile-desktop/manganese-bar-module-downloads`.
 
 ## Permissions
 

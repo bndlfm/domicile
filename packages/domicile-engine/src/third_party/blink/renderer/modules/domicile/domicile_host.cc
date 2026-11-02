@@ -13,6 +13,7 @@
 #include "base/check.h"
 #include "base/functional/callback.h"
 #include "base/functional/callback_helpers.h"
+#include "base/notreached.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
 #include "components/domicile/common/cursor_shape.h"
 #include "components/domicile/common/display_transform.h"
@@ -22,6 +23,7 @@
 #include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_object_builder.h"
 #include "third_party/blink/renderer/bindings/modules/v8/v8_domicile_cursor_shape.h"
+#include "third_party/blink/renderer/bindings/modules/v8/v8_domicile_download_state.h"
 #include "third_party/blink/renderer/bindings/modules/v8/v8_domicile_fetch_header.h"
 #include "third_party/blink/renderer/bindings/modules/v8/v8_domicile_fetch_response.h"
 #include "third_party/blink/renderer/bindings/modules/v8/v8_domicile_file_search.h"
@@ -45,6 +47,7 @@
 #include "third_party/blink/renderer/modules/domicile/domicile_browser_window.h"
 #include "third_party/blink/renderer/modules/domicile/domicile_cast_sink.h"
 #include "third_party/blink/renderer/modules/domicile/domicile_display.h"
+#include "third_party/blink/renderer/modules/domicile/domicile_download.h"
 #include "third_party/blink/renderer/modules/domicile/domicile_extension.h"
 #include "third_party/blink/renderer/modules/domicile/domicile_extension_popup_event.h"
 #include "third_party/blink/renderer/modules/domicile/domicile_notification.h"
@@ -140,6 +143,8 @@ DomicileHost::DomicileHost(LocalDOMWindow& window)
       windows_receiver_(this, &window),
       cast_(&window),
       cast_receiver_(this, &window),
+      downloads_remote_(&window),
+      downloads_receiver_(this, &window),
       shell_fetch_(&window) {}
 
 DomicileHost::~DomicileHost() = default;
@@ -187,6 +192,13 @@ bool DomicileHost::EnsureBound() {
   window_->GetBrowserInterfaceBroker().GetInterface(
       cast_.BindNewPipeAndPassReceiver(task_runner));
   cast_->SetClient(cast_receiver_.BindNewPipeAndPassRemote(task_runner));
+
+  // The downloads, bound eagerly too: the shell shows a downloads item only
+  // while there are any, so it must hear of them unasked. See downloads.mojom.
+  window_->GetBrowserInterfaceBroker().GetInterface(
+      downloads_remote_.BindNewPipeAndPassReceiver(task_runner));
+  downloads_remote_->SetClient(
+      downloads_receiver_.BindNewPipeAndPassRemote(task_runner));
   return true;
 }
 
@@ -1781,6 +1793,37 @@ void DomicileHost::stopCasting(ScriptState*,
   }
 }
 
+void DomicileHost::cancelDownload(ScriptState*,
+                                  const String& id,
+                                  ExceptionState& exception_state) {
+  if (id.empty()) {
+    exception_state.ThrowTypeError("id must be a download's id");
+    return;
+  }
+  if (Ready(exception_state)) {
+    downloads_remote_->Cancel(id);
+  }
+}
+
+void DomicileHost::removeDownload(ScriptState*,
+                                  const String& id,
+                                  ExceptionState& exception_state) {
+  if (id.empty()) {
+    exception_state.ThrowTypeError("id must be a download's id");
+    return;
+  }
+  if (Ready(exception_state)) {
+    downloads_remote_->Remove(id);
+  }
+}
+
+void DomicileHost::clearDownloads(ScriptState*,
+                                  ExceptionState& exception_state) {
+  if (Ready(exception_state)) {
+    downloads_remote_->Clear();
+  }
+}
+
 namespace {
 
 // The browser's answer to fetchWithCookies(): a response, or why there is
@@ -1876,6 +1919,40 @@ void DomicileHost::SinksChanged(
   cast_sinks_ =
       MakeGarbageCollected<FrozenArray<DomicileCastSink>>(std::move(listed));
   DispatchEvent(*Event::Create(domicile_event_names::Castsinkschanged()));
+}
+
+namespace {
+
+V8DomicileDownloadState DownloadStateOf(
+    domicile::mojom::blink::DownloadState state) {
+  switch (state) {
+    case domicile::mojom::blink::DownloadState::kInProgress:
+      return V8DomicileDownloadState(
+          V8DomicileDownloadState::Enum::kInProgress);
+    case domicile::mojom::blink::DownloadState::kComplete:
+      return V8DomicileDownloadState(V8DomicileDownloadState::Enum::kComplete);
+    case domicile::mojom::blink::DownloadState::kFailed:
+      return V8DomicileDownloadState(V8DomicileDownloadState::Enum::kFailed);
+  }
+  NOTREACHED();
+}
+
+}  // namespace
+
+// Stored, like WindowsChanged.
+void DomicileHost::DownloadsChanged(
+    Vector<domicile::mojom::blink::DownloadPtr> downloads) {
+  HeapVector<Member<DomicileDownload>> listed;
+  listed.reserve(downloads.size());
+  for (const auto& download : downloads) {
+    listed.push_back(MakeGarbageCollected<DomicileDownload>(
+        download->id, DownloadStateOf(download->state), download->path,
+        download->received_bytes, download->total_bytes, download->window,
+        download->page.GetString()));
+  }
+  downloads_ =
+      MakeGarbageCollected<FrozenArray<DomicileDownload>>(std::move(listed));
+  DispatchEvent(*Event::Create(domicile_event_names::Downloadschanged()));
 }
 
 // A standard MessageEvent, so a line the page parses needs no event type of
@@ -1977,6 +2054,7 @@ void DomicileHost::Trace(Visitor* visitor) const {
   visitor->Trace(displays_);
   visitor->Trace(browser_windows_);
   visitor->Trace(cast_sinks_);
+  visitor->Trace(downloads_);
   visitor->Trace(client_windows_);
   visitor->Trace(held_);
   visitor->Trace(file_search_);
@@ -1998,6 +2076,8 @@ void DomicileHost::Trace(Visitor* visitor) const {
   visitor->Trace(windows_receiver_);
   visitor->Trace(cast_);
   visitor->Trace(cast_receiver_);
+  visitor->Trace(downloads_remote_);
+  visitor->Trace(downloads_receiver_);
   visitor->Trace(shell_fetch_);
   visitor->Trace(input_listeners_);
   EventTarget::Trace(visitor);
