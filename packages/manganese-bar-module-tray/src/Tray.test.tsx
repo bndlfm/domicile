@@ -76,6 +76,7 @@ const renderTray = ({
       domicile={domicile}
       extensions={extensions}
       items={items}
+      onActivate={() => undefined}
       onMove={onMove}
       onOpen={() => undefined}
       opened={undefined}
@@ -119,6 +120,7 @@ describe("Tray", () => {
           domicile={recordingDomicile([])}
           extensions={[]}
           items={[{ ...sync, title: "Syncthing (paused)" }]}
+          onActivate={() => undefined}
           onMove={() => undefined}
           onOpen={() => undefined}
           opened={undefined}
