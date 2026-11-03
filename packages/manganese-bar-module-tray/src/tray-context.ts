@@ -15,6 +15,8 @@ export type TrayState = {
   extensions: readonly Extension[];
   /** The applications' tray icons. */
   items: readonly TrayItem[];
+  /** Extension `id`'s action was clicked on the bar on `screen`. */
+  clicked: (screen: string, id: string) => void;
   /** Open an extension's popup on `screen`, or close it with `undefined`. */
   open: (screen: string, popup: ExtensionPopup | undefined) => void;
   /** The open extension popup and the screen it is on. */

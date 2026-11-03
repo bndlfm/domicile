@@ -52,6 +52,7 @@ TOGETHER=(
   guard-extension-installer
   guard-extension-tray
   guard-extension-open-popup
+  guard-extension-side-panel
   guard-webview-keyboard
   guard-webview-escape
   guard-webview-browser-page

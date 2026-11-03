@@ -344,11 +344,11 @@ export const Desktop = ({
   });
 
   // The open extension popup and the bar it belongs to.
-  const { open: openExtension, opened } = useOpenedPopup(
-    domicile,
-    extensions,
-    windows.focused,
-  );
+  const {
+    clicked: clickedExtension,
+    open: openExtension,
+    opened,
+  } = useOpenedPopup(domicile, extensions, windows.focused);
 
   const volumeKeys = useVolumeKeys(deskSound(domicile));
   const brightnessKeys = useBrightnessKeys(deskBacklight(domicile));
@@ -545,13 +545,14 @@ export const Desktop = ({
   );
   const trayState = useMemo(
     () => ({
+      clicked: clickedExtension,
       extensions,
       items: tray,
       open: openExtension,
       opened,
       order: trayOrder,
     }),
-    [extensions, opened, openExtension, tray, trayOrder],
+    [clickedExtension, extensions, opened, openExtension, tray, trayOrder],
   );
   // Kept while each screen shows the same workspace, though `screens` changes
   // with every window.

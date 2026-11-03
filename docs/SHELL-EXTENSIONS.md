@@ -149,6 +149,7 @@ The browser carries out some extension calls. Others fire an event on a
 | `tabs.update(id, {active: true})`, `windows.update(id, {focused: true})` | `domicile-focus-request` (`WEBVIEW_FOCUS_REQUEST_EVENT`): raise that window |
 | `tabs.setZoom(id, factor)` | `domicile-zoom-change`: already applied |
 | `action.openPopup()` | `extensions.on("popup")`: open that popup ([A click](#a-click)) |
+| `sidePanel.open()` | A popup window showing the side panel, with no size (0 by 0), in `browserwindowschanged`: tile it; a second call sends `domicile-focus-request` for it. `sidePanel.close()` closes it |
 
 Calls with no desktop meaning (`tabs.move`, `tabs.group`, `tabs.discard`, …)
 fail with `not supported on a Domicile desk`.
@@ -160,7 +161,8 @@ fail with `not supported on a Domicile desk`.
 ([The engine owns browser windows](SHELL-BROWSER-WINDOWS.md#the-engine-owns-browser-windows)):
 
 - It is listed with `popupWindow` (its `chrome.windows` id) and the requested
-  `width` and `height` (0 if unset). Placement is yours.
+  `width` and `height` (0 if unset). Placement is yours. Manganese floats one
+  with a size and tiles one without, such as a side panel.
 - It shows an extension's page, so draw it with no address bar, as Chrome does.
 - `windows.remove(popupWindow)` closes it.
 - `windows.update(popupWindow, {focused: true})` fires `domicile-focus-request`

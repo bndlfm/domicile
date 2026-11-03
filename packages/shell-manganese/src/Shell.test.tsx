@@ -2445,7 +2445,9 @@ describe("Shell", () => {
       await launched();
 
       domicile.engineOpens("chrome-extension://vault/popup.html", {
+        height: 600,
         popupWindow: 7,
+        width: 380,
       });
 
       expect(windowsOnScreen(container)).toEqual(["Browser", "Browser"]);

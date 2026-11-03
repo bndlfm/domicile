@@ -568,6 +568,21 @@ describe("the windows an extension asks for", () => {
 
     expect(floatOf(state)).toMatchObject({ height: 630, width: 1280 });
   });
+
+  // An extension's side panel: the engine opens it as a popup window at no
+  // size, and the user wants it beside their windows.
+  it("tiles one that asked for no size", () => {
+    const state = reduce(
+      desktop("kitty"),
+      WindowAction.BrowserWindowsListed([
+        listed("1", POPUP, { height: 0, popupWindow: 7, width: 0 }),
+      ]),
+    );
+
+    expect(activeIdOf(state)).toBe(BROWSER("1"));
+    expect(state.windows[1]).toMatchObject({ popupWindow: 7 });
+    expect(workspaceHere(state).floats).toEqual([]);
+  });
 });
 
 // `window.open()` with a size (such as Slack's huddle), which the engine lists

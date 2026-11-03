@@ -154,6 +154,13 @@ interface DomicileExtension {
   shell gets as `extensionpopuprequested`. It answers once the shell is
   asked, not once the popup loads. The popup's URL is carried because
   Phantom clears its popup as soon as the call answers.
+- **`sidePanel.open()`** opens the side panel's page as a popup window of its
+  own, with no size, since the desk has no side panel. The shell tiles it
+  with the other windows, with no address bar. A second call raises the window already
+  showing that page; `sidePanel.close()` closes it. The desk's functions
+  replace Chrome's and check as Chrome does (a target, the window, an enabled
+  panel), but ask for no user gesture, which the desk's clicks lack. Phantom
+  opens in its side panel by default from 26.37.
 
 SDK side: the `DomicileHost` types in `packages/chrome-sdk`, and the tray
 and popup panel in `packages/manganese-bar-module-tray/src/extensions/`.
@@ -214,6 +221,7 @@ Mutations:
 | `tabs.setZoom`, `getZoom` | The guest: `WebViewGuest::ZoomTo`, per site via `HostZoomMap`. The element gets `domicile-zoom-change`. `0` is the default. Values outside Blink's browser range are refused. |
 | `tabs.getZoomSettings`, `setZoomSettings` | The desk: `automatic`, `per-origin` only. Other settings are refused. |
 | `action.openPopup()` | The shell's tray (above) |
+| `sidePanel.open()`, `sidePanel.close()` | A popup window showing the side panel (above) |
 | `tabs.move`, `group`, `ungroup`, `discard`, `duplicate`, `createSplit`, `unsplit`; `tabs.update`'s `pinned`, `openerTabId`, `autoDiscardable`; `windows.update` bounds and state; any `windows.create` other than a `popup` with one `url` | Error: `not supported on a Domicile desk` |
 
 ### Popup windows
@@ -297,6 +305,7 @@ Engine guards in `packages/domicile-engine/scripts/`:
 - `guard-extension-installer.sh`
 - `guard-extension-tray.sh`
 - `guard-extension-open-popup.sh`
+- `guard-extension-side-panel.sh`
 - `guard-webview-content-script.sh`
 - `guard-webview-tabs.sh`
 - `guard-webview-active-tab.sh`
