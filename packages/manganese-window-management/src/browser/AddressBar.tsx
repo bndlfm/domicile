@@ -22,7 +22,7 @@ import { ClockCounterClockwiseIcon } from "@phosphor-icons/react/dist/ssr/ClockC
 import { DetectiveIcon } from "@phosphor-icons/react/dist/ssr/Detective";
 import { GlobeSimpleIcon } from "@phosphor-icons/react/dist/ssr/GlobeSimple";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
-import type { CSSProperties, FormEvent } from "react";
+import type { CSSProperties, FormEvent, MouseEvent } from "react";
 import { useState } from "react";
 import { css } from "../../styled-system/css";
 import { hstack } from "../../styled-system/patterns";
@@ -61,7 +61,11 @@ type Props = {
   /** Whether a page is loading, which turns Reload into Stop. */
   loading: boolean;
   onBack: () => void;
+  /** Goes back in a new window, for a middle click on Back. */
+  onBackInNewWindow: () => void;
   onForward: () => void;
+  /** Goes forward in a new window, for a middle click on Forward. */
+  onForwardInNewWindow: () => void;
   /** Loads `url`, already resolved from what was typed. */
   onNavigate: (url: string) => void;
   onReload: () => void;
@@ -103,7 +107,9 @@ export const AddressBar = ({
   loading,
   mediaDevices,
   onBack,
+  onBackInNewWindow,
   onForward,
+  onForwardInNewWindow,
   onNavigate,
   onReload,
   onSetSitePermission,
@@ -148,6 +154,7 @@ export const AddressBar = ({
         <Button
           disabled={!canGoBack}
           label="Back"
+          onAuxClick={onMiddleClick(onBackInNewWindow)}
           onClick={onBack}
           rounded
           size="sm"
@@ -158,6 +165,7 @@ export const AddressBar = ({
         <Button
           disabled={!canGoForward}
           label="Forward"
+          onAuxClick={onMiddleClick(onForwardInNewWindow)}
           onClick={onForward}
           rounded
           size="sm"
@@ -266,6 +274,21 @@ export const AddressBar = ({
     </form>
   );
 };
+
+/** `MouseEvent.button` for the middle button. */
+const MIDDLE_BUTTON = 1;
+
+/**
+ * An `onAuxClick` that calls `open` for a middle click, as Chrome opens a
+ * middle-clicked Back or Forward in a new tab. A right click is left alone.
+ */
+const onMiddleClick =
+  (open: () => void) =>
+  (event: MouseEvent): void => {
+    if (event.button === MIDDLE_BUTTON) {
+      open();
+    }
+  };
 
 /**
  * Inline style handing `progress` to `loadingStyles` as `--load-progress`.

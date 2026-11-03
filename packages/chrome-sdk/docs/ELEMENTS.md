@@ -84,7 +84,8 @@ once, when the view connects. The SDK provides types only.
   the page draws at it. Set the `resizing` attribute while the user drags an
   edge: each box then shows at once, with the page's latest frame at its own
   size in the top left corner until the page draws at the new box.
-- **Properties:** `src`, `goBack()`, `goForward()`, `stop()`, `reload()`,
+- **Properties:** `src`, `goBack()`, `goForward()`, `goBackInNewWindow()`,
+  `goForwardInNewWindow()`, `stop()`, `reload()`,
   `canGoBack`, `canGoForward`, `loading`, `focus()`, `inspect()` (opens
   DevTools as a new window), `print()` (the desktop's print dialog).
 - **Events** (selected; see `src/webview-element.ts` for all):

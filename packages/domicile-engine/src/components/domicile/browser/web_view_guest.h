@@ -71,6 +71,9 @@ using GuestCreatedCallback =
 
 class WebViewGuest;
 
+// A step through a guest's history.
+enum class HistoryStep { kBack, kForward };
+
 // Holds the desk's browser windows, one per profile. Implemented in //chrome
 // (//chrome/browser/domicile/domicile_browser_windows.h) because a window's
 // page is a tab, and tab helpers live in //chrome.
@@ -86,6 +89,11 @@ class BrowserWindowHost {
   virtual void Open(content::BrowserContext& context,
                     const GURL& url,
                     const std::optional<WebViewPartition>& partition) = 0;
+
+  // Opens a browser window with a copy of `source`'s history, in its context
+  // and partition, and takes `step` there. See
+  // mojom::WebViewGuest.GoBackInNewWindow.
+  virtual void OpenHistoryStep(WebViewGuest& source, HistoryStep step) = 0;
 
   // Makes a browser window for a page's `window.open()` or `target="_blank"`
   // from content's `params`, which name the opener and the window. Content
@@ -314,6 +322,11 @@ class WebViewGuest : public mojom::WebViewGuest,
   // This guest's WebContents. Lives as long as the guest.
   content::WebContents& contents() const { return *guest_contents_; }
 
+  // Gives a new window's page a copy of `source`'s history and takes `step`
+  // there, as Chrome's middle-clicked back button does with a cloned tab. In
+  // place of the first Navigate. See BrowserWindowHost::OpenHistoryStep.
+  void TakeHistoryStep(WebViewGuest& source, HistoryStep step);
+
   // The storage partition the page was made in, or nothing for its profile's
   // own. A partitioned page has a guest SiteInstance, so its new windows share
   // the partition. In a private page it is always in memory.
@@ -451,6 +464,8 @@ class WebViewGuest : public mojom::WebViewGuest,
   // NavigationController instead.
   void GoBack() override;
   void GoForward() override;
+  void GoBackInNewWindow() override;
+  void GoForwardInNewWindow() override;
   void Stop() override;
   void Reload() override;
   void SetZoom(double factor) override;
@@ -856,6 +871,10 @@ class WebViewGuest : public mojom::WebViewGuest,
   void ReportNewWindow(const GURL& target_url);
 
   // Reports back/forward availability to the element if it changed.
+  // Opens a browser window that takes `step` through a copy of this guest's
+  // history; see mojom::WebViewGuest.GoBackInNewWindow.
+  void OpenHistoryStep(HistoryStep step);
+
   //
   // Uses `CanGoBack()`, not `ShouldEnableBackButton()`. The latter stays true
   // over skippable entries for Chrome's long-press history menu, which a shell

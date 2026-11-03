@@ -443,6 +443,18 @@ void HTMLWebViewElement::goForward() {
   }
 }
 
+void HTMLWebViewElement::goBackInNewWindow() {
+  if (guest_.is_bound()) {
+    guest_->GoBackInNewWindow();
+  }
+}
+
+void HTMLWebViewElement::goForwardInNewWindow() {
+  if (guest_.is_bound()) {
+    guest_->GoForwardInNewWindow();
+  }
+}
+
 void HTMLWebViewElement::stop() {
   if (guest_.is_bound()) {
     guest_->Stop();

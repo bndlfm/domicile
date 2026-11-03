@@ -66,6 +66,8 @@ class CORE_EXPORT HTMLWebViewElement final
   // with no history is a no-op.
   void goBack();
   void goForward();
+  void goBackInNewWindow();
+  void goForwardInNewWindow();
   void stop();
   void reload();
 

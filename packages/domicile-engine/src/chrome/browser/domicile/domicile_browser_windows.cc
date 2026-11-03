@@ -14,6 +14,7 @@
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/functional/callback_helpers.h"
+#include "base/functional/function_ref.h"
 #include "base/location.h"
 #include "base/logging.h"
 #include "base/memory/raw_ptr.h"
@@ -132,8 +133,22 @@ class DeskWindows final : public base::SupportsUserData::Data,
   bool Open(const GURL& url,
             bool private_browsing,
             const std::optional<WebViewPartition>& partition) {
-    return Make(url, /*popup_window=*/std::nullopt, 0, 0, private_browsing,
+    return Make([&](WebViewGuest& guest) { guest.Navigate(url); },
+                /*popup_window=*/std::nullopt, 0, 0, private_browsing,
                 /*app=*/false, partition);
+  }
+
+  // Opens a window with a copy of `source`'s history and takes `step` there,
+  // private when `private_browsing`. Returns false and opens nothing when the
+  // profile has no shell to own it.
+  bool OpenHistoryStep(WebViewGuest& source,
+                       HistoryStep step,
+                       bool private_browsing,
+                       const std::optional<WebViewPartition>& partition) {
+    return Make(
+        [&](WebViewGuest& guest) { guest.TakeHistoryStep(source, step); },
+        /*popup_window=*/std::nullopt, 0, 0, private_browsing,
+        /*app=*/false, partition);
   }
 
   // Opens an app window at `url`: a window of the desk's own window that the
@@ -157,7 +172,8 @@ class DeskWindows final : public base::SupportsUserData::Data,
         return true;
       }
     }
-    return Make(url, /*popup_window=*/std::nullopt, 0, 0,
+    return Make([&](WebViewGuest& guest) { guest.Navigate(url); },
+                /*popup_window=*/std::nullopt, 0, 0,
                 /*private_browsing=*/false, /*app=*/true,
                 /*partition=*/std::nullopt, /*app_host=*/std::string(), app_id);
   }
@@ -165,7 +181,8 @@ class DeskWindows final : public base::SupportsUserData::Data,
   // Opens an app window at an app module's `url`, pinned to `app_host`. See
   // WebViewGuest::PinToApp.
   bool OpenAppModule(const GURL& url, const std::string& app_host) {
-    return Make(url, /*popup_window=*/std::nullopt, 0, 0,
+    return Make([&](WebViewGuest& guest) { guest.Navigate(url); },
+                /*popup_window=*/std::nullopt, 0, 0,
                 /*private_browsing=*/false, /*app=*/true,
                 /*partition=*/std::nullopt, app_host);
   }
@@ -202,7 +219,8 @@ class DeskWindows final : public base::SupportsUserData::Data,
 
   // Opens a window at `url` as popup window `window_id`'s one tab.
   bool OpenPopupWindow(int window_id, const GURL& url, int width, int height) {
-    return Make(url, window_id, width, height, /*private_browsing=*/false,
+    return Make([&](WebViewGuest& guest) { guest.Navigate(url); }, window_id,
+                width, height, /*private_browsing=*/false,
                 /*app=*/false, /*partition=*/std::nullopt);
   }
 
@@ -363,7 +381,8 @@ class DeskWindows final : public base::SupportsUserData::Data,
     int captures = 0;
   };
 
-  bool Make(const GURL& url,
+  // Makes a window and gives it its first page with `load`.
+  bool Make(base::FunctionRef<void(WebViewGuest&)> load,
             std::optional<int> popup_window,
             int width,
             int height,
@@ -377,8 +396,7 @@ class DeskWindows final : public base::SupportsUserData::Data,
     // no shell has nothing to draw a window in anyway.
     content::WebContents* shell = ShellContentsIn(profile_);
     if (shell == nullptr) {
-      LOG(WARNING) << "domicile: no shell to open a browser window at "
-                   << url.possibly_invalid_spec() << " in.";
+      LOG(WARNING) << "domicile: no shell to open a browser window in.";
       return false;
     }
     const std::string id = base::NumberToString(next_id_++);
@@ -392,7 +410,7 @@ class DeskWindows final : public base::SupportsUserData::Data,
     if (!app_host.empty()) {
       guest->PinToApp(app_host);
     }
-    guest->Navigate(url);
+    load(*guest);
     windows_.push_back(Window{id, std::move(guest), std::move(watch), width,
                               height, app, app_id});
     Changed();
@@ -491,6 +509,13 @@ class Host final : public BrowserWindowHost {
             const GURL& url,
             const std::optional<WebViewPartition>& partition) override {
     Windows(context).Open(url, context.IsOffTheRecord(), partition);
+  }
+
+  // As Open, in `source`'s context and partition.
+  void OpenHistoryStep(WebViewGuest& source, HistoryStep step) override {
+    content::BrowserContext& context = *source.contents().GetBrowserContext();
+    Windows(context).OpenHistoryStep(source, step, context.IsOffTheRecord(),
+                                     source.partition());
   }
 
   std::unique_ptr<content::WebContents> MakeOpenedWindow(
