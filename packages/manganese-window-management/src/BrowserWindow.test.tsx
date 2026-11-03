@@ -1587,6 +1587,51 @@ describe("BrowserWindow", () => {
       expect(control("Forward")).not.toBeDisabled();
       expect(control("Back")).toBeDisabled();
     });
+
+    it("goes back and forward in a new window on a middle click", () => {
+      const { container } = render(
+        <BrowserWindow
+          behindPanel={false}
+          clickThrough={false}
+          covered={false}
+          depth={0}
+          domicile={silentDomicile}
+          dragging={false}
+          focused
+          frame={FRAME}
+          fullscreen={false}
+          motion="resting"
+          onDescription={noDescription}
+          onFocusRequest={() => undefined}
+          onIcon={noIcon}
+          onMotionEnded={nothingEnded}
+          onPageFullscreen={noFullscreen}
+          onReach={() => undefined}
+          rect={ON_SCREEN}
+          resizing={false}
+          url="https://example.com"
+          window="1"
+        />,
+      );
+      const element = view(container);
+      historyReaches(element, true, true);
+      const calls: string[] = [];
+      element.goBackInNewWindow = () => {
+        calls.push("back");
+      };
+      element.goForwardInNewWindow = () => {
+        calls.push("forward");
+      };
+
+      for (const name of ["Back", "Forward"]) {
+        fireEvent(
+          control(name),
+          new MouseEvent("auxclick", { bubbles: true, button: 1 }),
+        );
+      }
+
+      expect(calls).toStrictEqual(["back", "forward"]);
+    });
   });
 
   // `AddressBar` tests the button itself. This checks that it reads the view's

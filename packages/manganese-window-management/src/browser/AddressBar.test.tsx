@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { ConnectionSafety } from "@domicile-desktop/manganese-address/connection-safety";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { css } from "../../styled-system/css";
 import { AddressBar } from "./AddressBar";
@@ -15,7 +15,9 @@ const BAR = {
   loading: false,
   loadProgress: 0,
   onBack: () => undefined,
+  onBackInNewWindow: () => undefined,
   onForward: () => undefined,
+  onForwardInNewWindow: () => undefined,
   onNavigate: () => undefined,
   onReload: () => undefined,
   onSetSitePermission: () => undefined,
@@ -35,6 +37,10 @@ const address = (): HTMLInputElement =>
 
 const control = (name: string): HTMLElement =>
   screen.getByRole("button", { name });
+
+/** A middle click, which arrives as `auxclick`, not `click`. */
+const middleClick = (): MouseEvent =>
+  new MouseEvent("auxclick", { bubbles: true, button: 1 });
 
 describe("AddressBar", () => {
   it("shuts its lock when a page turns out to be secure", () => {
@@ -182,6 +188,58 @@ describe("AddressBar", () => {
       await userEvent.click(control("Forward"));
 
       expect(calls).toStrictEqual(["back", "forward"]);
+    });
+
+    // As a middle click on Chrome's back button opens a tab.
+    it("goes back and forward in a new window on a middle click", () => {
+      const calls: string[] = [];
+      render(
+        <AddressBar
+          {...BAR}
+          canGoBack
+          canGoForward
+          onBack={() => {
+            calls.push("back");
+          }}
+          onBackInNewWindow={() => {
+            calls.push("back in a new window");
+          }}
+          onForward={() => {
+            calls.push("forward");
+          }}
+          onForwardInNewWindow={() => {
+            calls.push("forward in a new window");
+          }}
+        />,
+      );
+
+      fireEvent(control("Back"), middleClick());
+      fireEvent(control("Forward"), middleClick());
+
+      expect(calls).toStrictEqual([
+        "back in a new window",
+        "forward in a new window",
+      ]);
+    });
+
+    it("leaves a right click alone", () => {
+      const calls: string[] = [];
+      render(
+        <AddressBar
+          {...BAR}
+          canGoBack
+          onBackInNewWindow={() => {
+            calls.push("back in a new window");
+          }}
+        />,
+      );
+
+      fireEvent(
+        control("Back"),
+        new MouseEvent("auxclick", { bubbles: true, button: 2 }),
+      );
+
+      expect(calls).toStrictEqual([]);
     });
   });
 
