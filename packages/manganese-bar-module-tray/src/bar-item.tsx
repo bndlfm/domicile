@@ -10,12 +10,15 @@ import { useTrayState } from "./tray-context";
 export const Tray = () => {
   const domicile = useDomicile();
   const { screen } = useBar();
-  const { extensions, items, open, opened, order } = useTrayState();
+  const { clicked, extensions, items, open, opened, order } = useTrayState();
   return (
     <TrayRow
       domicile={domicile}
       extensions={extensions}
       items={items}
+      onActivate={(id) => {
+        clicked(screen, id);
+      }}
       onMove={order.move}
       onOpen={(popup) => {
         open(screen, popup);

@@ -240,8 +240,8 @@ export class FakeDomicileHost {
    * `target="_blank"`, with `popupWindow` an extension's popup window, or with
    * `isApp` `domicile open --app`. `openBrowserWindow` calls this too, and
    * `openPrivateBrowserWindow` with `isPrivate`, and `openApp` with `isApp`
-   * and `appId`. Ids count up from `"1"`; the
-   * asked-for size is 0.
+   * and `appId`. Ids count up from `"1"`; the asked-for size is 0 unless
+   * `width` and `height` give one.
    */
   openBrowser(
     url: string,
@@ -251,10 +251,18 @@ export class FakeDomicileHost {
       isPrivate = false,
       partition = "",
       popupWindow = null,
+      width = 0,
+      height = 0,
     }: Partial<
       Pick<
         DomicileBrowserWindow,
-        "appId" | "isApp" | "isPrivate" | "partition" | "popupWindow"
+        | "appId"
+        | "height"
+        | "isApp"
+        | "isPrivate"
+        | "partition"
+        | "popupWindow"
+        | "width"
       >
     > = {},
   ): void {
@@ -264,7 +272,7 @@ export class FakeDomicileHost {
         ...(this.#state.browserWindows ?? []),
         {
           appId,
-          height: 0,
+          height,
           id: this.#browsersOpened.toString(),
           isApp,
           isCaptured: false,
@@ -273,7 +281,7 @@ export class FakeDomicileHost {
           popupWindow,
           title: "",
           url,
-          width: 0,
+          width,
         } satisfies DomicileBrowserWindow,
       ],
     });

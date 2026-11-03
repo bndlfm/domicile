@@ -25,6 +25,11 @@ type Props = {
   /** Extension this action belongs to. */
   extension: Extension;
   /**
+   * The action was clicked. A popup its extension then asks for with
+   * `action.openPopup()` opens on this bar.
+   */
+  onActivate: () => void;
+  /**
    * Requests a popup, or `undefined` to close it. The desktop decides, because
    * an open popup takes the keyboard from the windows (see `AppWindow`).
    */
@@ -50,6 +55,7 @@ type Props = {
 export const ExtensionAction = ({
   domicile,
   extension,
+  onActivate,
   onOpen,
   opened,
 }: Props) => {
@@ -64,6 +70,7 @@ export const ExtensionAction = ({
       flush
       onOpenChange={(opening) => {
         if (opening) {
+          onActivate();
           domicile.extensions.activate(id);
           if (popup !== undefined) {
             onOpen({ id, popup });

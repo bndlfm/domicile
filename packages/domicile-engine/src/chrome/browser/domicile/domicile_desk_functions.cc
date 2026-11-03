@@ -13,12 +13,15 @@
 #include "base/memory/scoped_refptr.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/types/expected.h"
 #include "base/values.h"
 #include "chrome/browser/domicile/domicile_extension_tray.h"
 #include "chrome/browser/domicile/domicile_window_controller.h"
+#include "chrome/browser/extensions/api/side_panel/side_panel_service.h"
 #include "chrome/browser/extensions/extension_tab_util.h"
+#include "chrome/common/extensions/api/side_panel.h"
 #include "chrome/common/extensions/api/tabs.h"
 #include "chrome/common/extensions/api/windows.h"
 #include "components/domicile/browser/desk_tabs.h"
@@ -840,6 +843,134 @@ class DeskActionOpenPopupFunction : public ExtensionFunction {
   }
 };
 
+// The extension's side panel page, as sidePanel.open and close find it: a
+// tab's own panel, else the extension's global one, as Chrome picks. An
+// invalid GURL when it has none, or turned it off.
+GURL SidePanelOf(ExtensionFunction& function, std::optional<int> tab_id) {
+  extensions::api::side_panel::PanelOptions options =
+      extensions::SidePanelService::Get(function.browser_context())
+          ->GetOptions(*function.extension(), tab_id);
+  if (!options.path.has_value() || !options.enabled.value_or(false)) {
+    return GURL();
+  }
+  return function.extension()->GetResourceURL(*options.path);
+}
+
+// The desk's popup window already showing side panel `panel`, or null. Matched
+// on the page's address without its query or fragment, which a panel's own
+// navigation changes.
+DomicileWindowController* SidePanelWindow(DomicileWindowController& desk,
+                                          const GURL& panel) {
+  GURL::Replacements bare;
+  bare.ClearQuery();
+  bare.ClearRef();
+  const GURL wanted = panel.ReplaceComponents(bare);
+  for (DomicileWindowController* window : desk.Windows()) {
+    content::WebContents* tab = window->GetActiveTab();
+    if (window->IsPopup() && tab != nullptr &&
+        tab->GetLastCommittedURL().ReplaceComponents(bare) == wanted) {
+      return window;
+    }
+  }
+  return nullptr;
+}
+
+// sidePanel.open and close's checks, shared: a target, the desk, the window
+// named, and an enabled panel. Sets `panel`, or returns Chrome's error.
+std::optional<std::string> SidePanelCheck(ExtensionFunction& function,
+                                          std::optional<int> tab_id,
+                                          std::optional<int> window_id,
+                                          GURL& panel) {
+  if (!tab_id.has_value() && !window_id.has_value()) {
+    return "At least one of `tabId` and `windowId` must be provided";
+  }
+  if (DeskOf(function) == nullptr) {
+    return kNoActiveWindowFound;
+  }
+  if (window_id.has_value() && WindowNamed(function, *window_id) == nullptr) {
+    return WindowNotFound(*window_id);
+  }
+  panel = SidePanelOf(function, tab_id);
+  if (!panel.is_valid()) {
+    // In Chrome's words.
+    return tab_id.has_value()
+               ? base::StringPrintf("No active side panel for tabId: %d",
+                                    *tab_id)
+               : base::StringPrintf("No active side panel for windowId: %d",
+                                    *window_id);
+  }
+  return std::nullopt;
+}
+
+// sidePanel.open: the desk has no side panel, so the panel opens as a popup
+// window of its own with no size asked, which the shell tiles like any window,
+// or the one already showing it is raised. A tile is taller than the 600 an
+// action's popup may grow to, so an extension that checks its height (Phantom
+// does) lays itself out as a side panel. Phantom opens in its side panel by default from 26.37, so a desk
+// that refused this opened nothing.
+//
+// Unlike Chrome's, it asks for no user gesture: the desk's action clicks carry
+// none.
+class DeskSidePanelOpenFunction : public ExtensionFunction {
+ public:
+  DECLARE_EXTENSION_FUNCTION("sidePanel.open", SIDEPANEL_OPEN)
+
+ private:
+  ~DeskSidePanelOpenFunction() override = default;
+
+  ResponseAction Run() override {
+    EXTENSION_FUNCTION_VALIDATE(extension());
+    std::optional<extensions::api::side_panel::Open::Params> params =
+        extensions::api::side_panel::Open::Params::Create(args());
+    EXTENSION_FUNCTION_VALIDATE(params);
+    GURL panel;
+    if (std::optional<std::string> error = SidePanelCheck(
+            *this, params->options.tab_id, params->options.window_id, panel)) {
+      return RespondNow(Error(std::move(*error)));
+    }
+
+    DomicileWindowController* desk = DeskOf(*this);
+    if (DomicileWindowController* open = SidePanelWindow(*desk, panel)) {
+      GuestOf(*open->GetActiveTab()).RequestFocus();
+      return RespondNow(NoArguments());
+    }
+    content::WebContents* asker = desk->GetActiveTab();
+    if (asker == nullptr) {
+      return RespondNow(Error(kNoWindowToAskError));
+    }
+    DomicileWindowController& window = desk->OpenPopup();
+    GuestOf(*asker).RequestPopupWindow(window.GetWindowId(), panel, 0, 0);
+    return RespondNow(NoArguments());
+  }
+};
+
+// sidePanel.close: closes the side panel's window, if one is open.
+class DeskSidePanelCloseFunction : public ExtensionFunction {
+ public:
+  DECLARE_EXTENSION_FUNCTION("sidePanel.close", SIDEPANEL_CLOSE)
+
+ private:
+  ~DeskSidePanelCloseFunction() override = default;
+
+  ResponseAction Run() override {
+    EXTENSION_FUNCTION_VALIDATE(extension());
+    std::optional<extensions::api::side_panel::Close::Params> params =
+        extensions::api::side_panel::Close::Params::Create(args());
+    EXTENSION_FUNCTION_VALIDATE(params);
+    GURL panel;
+    if (std::optional<std::string> error = SidePanelCheck(
+            *this, params->options.tab_id, params->options.window_id, panel)) {
+      return RespondNow(Error(std::move(*error)));
+    }
+
+    if (DomicileWindowController* open =
+            SidePanelWindow(*DeskOf(*this), panel)) {
+      GuestOf(*open->GetActiveTab()).RequestClose();
+    }
+    return RespondNow(NoArguments());
+  }
+};
+
 }  // namespace
 
 void RegisterDeskFunctions() {
@@ -861,6 +992,8 @@ void RegisterDeskFunctions() {
   registry.RegisterFunction<DeskWindowsCreateFunction>();
   registry.RegisterFunction<DeskWindowsRemoveFunction>();
   registry.RegisterFunction<DeskActionOpenPopupFunction>();
+  registry.RegisterFunction<DeskSidePanelOpenFunction>();
+  registry.RegisterFunction<DeskSidePanelCloseFunction>();
   // Histogram UNKNOWN, so refusals are not counted as the refused calls.
   for (const char* name : RefusedOnDesk()) {
     registry.Register(ExtensionFunctionRegistry::FactoryEntry(

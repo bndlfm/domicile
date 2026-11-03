@@ -25,6 +25,8 @@ type Props = {
   items: readonly TrayItem[];
   /** Move `dragged` onto `target` among the `shown` keys; see `moveTo`. */
   onMove: (shown: readonly string[], dragged: string, target: string) => void;
+  /** Extension `id`'s action was clicked. */
+  onActivate: (id: string) => void;
   /** Open an extension's popup, or close the open one with `undefined`. */
   onOpen: (popup: ExtensionPopup | undefined) => void;
   /** The open extension popup, or `undefined`. */
@@ -52,6 +54,7 @@ export const Tray = ({
   extensions,
   items,
   onMove,
+  onActivate,
   onOpen,
   opened,
   order,
@@ -112,6 +115,7 @@ export const Tray = ({
           <Entry
             domicile={domicile}
             entry={entry}
+            onActivate={onActivate}
             onOpen={onOpen}
             opened={opened}
           />
@@ -121,18 +125,24 @@ export const Tray = ({
   );
 };
 
-type EntryProps = Pick<Props, "domicile" | "onOpen" | "opened"> & {
+type EntryProps = Pick<
+  Props,
+  "domicile" | "onActivate" | "onOpen" | "opened"
+> & {
   entry: TrayEntry;
 };
 
 /** One icon, rendered by kind. */
-const Entry = ({ domicile, entry, onOpen, opened }: EntryProps) => {
+const Entry = ({ domicile, entry, onActivate, onOpen, opened }: EntryProps) => {
   switch (entry.kind) {
     case TrayEntryKind.Extension: {
       return (
         <ExtensionAction
           domicile={domicile}
           extension={entry.extension}
+          onActivate={() => {
+            onActivate(entry.extension.id);
+          }}
           onOpen={onOpen}
           opened={opened}
         />

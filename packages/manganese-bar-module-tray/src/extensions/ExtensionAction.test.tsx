@@ -96,6 +96,7 @@ const trayAsking = (
       <ExtensionAction
         domicile={NO_DOMICILE}
         extension={extension}
+        onActivate={() => undefined}
         onOpen={resolve}
         opened={opened}
       />,
@@ -136,12 +137,14 @@ describe("ExtensionAction", () => {
           <ExtensionAction
             domicile={NO_DOMICILE}
             extension={blocker}
+            onActivate={() => undefined}
             onOpen={() => undefined}
             opened={undefined}
           />
           <ExtensionAction
             domicile={NO_DOMICILE}
             extension={counter}
+            onActivate={() => undefined}
             onOpen={() => undefined}
             opened={undefined}
           />
@@ -160,6 +163,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={NO_DOMICILE}
           extension={blocker}
+          onActivate={() => undefined}
           onOpen={() => undefined}
           opened={undefined}
         />,
@@ -171,6 +175,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={NO_DOMICILE}
           extension={blocker}
+          onActivate={() => undefined}
           onOpen={() => undefined}
           opened={OPEN}
         />,
@@ -184,6 +189,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={NO_DOMICILE}
           extension={blocker}
+          onActivate={() => undefined}
           onOpen={() => undefined}
           opened={OPEN}
         />,
@@ -197,6 +203,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={NO_DOMICILE}
           extension={blocker}
+          onActivate={() => undefined}
           onOpen={() => undefined}
           opened={OPEN}
         />,
@@ -212,6 +219,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={NO_DOMICILE}
           extension={blocker}
+          onActivate={() => undefined}
           onOpen={() => undefined}
           opened={OPEN}
         />,
@@ -246,6 +254,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={NO_DOMICILE}
           extension={blocker}
+          onActivate={() => undefined}
           onOpen={() => undefined}
           opened={OPEN}
         />,
@@ -304,6 +313,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={recordingDomicile(activated)}
           extension={blocker}
+          onActivate={() => undefined}
           onOpen={() => undefined}
           opened={undefined}
         />,
@@ -316,6 +326,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={recordingDomicile(activated)}
           extension={blocker}
+          onActivate={() => undefined}
           onOpen={() => undefined}
           opened={OPEN}
         />,
@@ -333,6 +344,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={recordingDomicile(activated)}
           extension={counter}
+          onActivate={() => undefined}
           onOpen={(id) => {
             opened.push(id);
           }}
@@ -345,6 +357,25 @@ describe("ExtensionAction", () => {
       expect(activated).toStrictEqual([COUNTER]);
       expect(opened).toStrictEqual([]);
     });
+
+    it("tells its bar it was clicked, so a popup it then asks for opens there", async () => {
+      let clicks = 0;
+      render(
+        <ExtensionAction
+          domicile={recordingDomicile([])}
+          extension={counter}
+          onActivate={() => {
+            clicks += 1;
+          }}
+          onOpen={() => undefined}
+          opened={undefined}
+        />,
+      );
+
+      await userEvent.click(screen.getByRole("button", { name: "Counter" }));
+
+      expect(clicks).toBe(1);
+    });
   });
 
   describe("a popup its extension asked for", () => {
@@ -356,6 +387,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={NO_DOMICILE}
           extension={counter}
+          onActivate={() => undefined}
           onOpen={() => undefined}
           opened={{ id: COUNTER, popup }}
         />,
@@ -411,6 +443,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={NO_DOMICILE}
           extension={blocker}
+          onActivate={() => undefined}
           onOpen={(id) => {
             asked = id;
           }}
@@ -430,6 +463,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={NO_DOMICILE}
           extension={blocker}
+          onActivate={() => undefined}
           onOpen={() => undefined}
           opened={OPEN}
         />,
@@ -447,6 +481,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={NO_DOMICILE}
           extension={blocker}
+          onActivate={() => undefined}
           onOpen={() => undefined}
           opened={OPEN}
         />,
@@ -470,6 +505,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={NO_DOMICILE}
           extension={blocker}
+          onActivate={() => undefined}
           onOpen={() => undefined}
           opened={OPEN}
         />,
@@ -508,6 +544,7 @@ describe("ExtensionAction", () => {
         <ExtensionAction
           domicile={NO_DOMICILE}
           extension={blocker}
+          onActivate={() => undefined}
           onOpen={() => undefined}
           opened={OPEN}
         />,

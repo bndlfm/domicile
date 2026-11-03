@@ -81,6 +81,39 @@ describe("useOpenedPopup", () => {
     });
   });
 
+  it("opens the popup an extension asks for on the bar its action was clicked on", () => {
+    // Docked, the clicked tray is often not on the focused screen.
+    const { fake, hook } = opening();
+
+    act(() => {
+      hook.result.current.clicked("HDMI-1", ID);
+    });
+    act(() => {
+      fake.dispatch("extensionpopuprequested", {
+        extensionId: ID,
+        popup: POPUP,
+      });
+    });
+
+    expect(hook.result.current.opened?.screen).toBe("HDMI-1");
+  });
+
+  it("opens a popup asked for after another action's click on the focused screen", () => {
+    const { fake, hook } = opening();
+
+    act(() => {
+      hook.result.current.clicked("HDMI-1", "ponmlkjihgfedcbaponmlkjihgfedcba");
+    });
+    act(() => {
+      fake.dispatch("extensionpopuprequested", {
+        extensionId: ID,
+        popup: POPUP,
+      });
+    });
+
+    expect(hook.result.current.opened?.screen).toBe("DP-1");
+  });
+
   it("closes the popup when its action leaves the tray", () => {
     const { hook } = opening();
     act(() => {

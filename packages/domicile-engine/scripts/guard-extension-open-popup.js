@@ -1,6 +1,6 @@
-// The shell guard-extension-open-popup.sh drives: one focused browser window,
-// and a click on the fixture's action once its service worker has cleared the
-// action's popup.
+// The shell guard-extension-open-popup.sh and guard-extension-side-panel.sh
+// drive: one focused browser window, and a click on the fixture's action once
+// its service worker has cleared the action's popup.
 //
 // Console output, which the engine writes to its log:
 //
@@ -10,6 +10,8 @@
 //                                fixture writes into its address
 //   GUARD activated              this page clicked the fixture's action
 //   GUARD popup id=… popup=…     an `extensionpopuprequested` arrived
+//   GUARD window url=… size=…    a popup window was listed, as a side panel
+//                                opens; it is drawn, so its page loads
 //
 // The engine's document calls `HostShell` once the module loads.
 
@@ -62,6 +64,21 @@ export const HostShell = (_root, desktop) => {
 
   host.addEventListener("extensionpopuprequested", (event) => {
     say(`popup id=${event.extensionId} popup=${event.popup}`);
+  });
+
+  const drawn = new Set();
+  host.addEventListener("browserwindowschanged", () => {
+    for (const window of host.browserWindows ?? []) {
+      if (window.popupWindow !== null && !drawn.has(window.id)) {
+        drawn.add(window.id);
+        say(`window url=${window.url} size=${window.width}x${window.height}`);
+        const tab = document.createElement("webview");
+        tab.style.position = "absolute";
+        tab.style.inset = "60% 10% 10% 10%";
+        tab.setAttribute("window", window.id);
+        document.body.append(tab);
+      }
+    }
   });
 
   host.addEventListener("extensionschanged", () => {
