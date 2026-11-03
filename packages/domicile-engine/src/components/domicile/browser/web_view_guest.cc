@@ -1130,6 +1130,55 @@ void WebViewGuest::GoBack() {
   guest_contents_->GetController().GoBack();
 }
 
+void WebViewGuest::GoBackInNewWindow() {
+  OpenHistoryStep(HistoryStep::kBack);
+}
+
+void WebViewGuest::GoForwardInNewWindow() {
+  OpenHistoryStep(HistoryStep::kForward);
+}
+
+void WebViewGuest::OpenHistoryStep(HistoryStep step) {
+  CHECK(guest_contents_);
+
+  // Nowhere to go is a normal case, as for GoBack, not a bad message.
+  content::NavigationController& history = guest_contents_->GetController();
+  const bool can_step =
+      step == HistoryStep::kBack ? history.CanGoBack() : history.CanGoForward();
+  if (!can_step) {
+    return;
+  }
+  // An app module's history holds its own domicile:// pages, which only a
+  // window pinned to it may show, and a copy would not be.
+  if (!app_host_.empty()) {
+    LOG(WARNING) << "domicile: app window " << window_id_
+                 << " may not open its history in a new window; refused.";
+    return;
+  }
+  Host().OpenHistoryStep(*this, step);
+}
+
+void WebViewGuest::TakeHistoryStep(WebViewGuest& source, HistoryStep step) {
+  CHECK(guest_contents_);
+  CHECK(source.guest_contents_);
+
+  content::NavigationController& history = guest_contents_->GetController();
+  // Reloads on the step, as WebContents::Clone's copy does.
+  history.CopyStateFrom(&source.guest_contents_->GetController(),
+                        /*needs_reload=*/true);
+  switch (step) {
+    case HistoryStep::kBack:
+      history.GoBack();
+      break;
+    case HistoryStep::kForward:
+      history.GoForward();
+      break;
+  }
+  // The history-in-a-new-window guard greps for this.
+  LOG(INFO) << "domicile: browser window " << window_id_
+            << " took a step through a copy of another page's history.";
+}
+
 void WebViewGuest::GoForward() {
   CHECK(guest_contents_);
   guest_contents_->GetController().GoForward();

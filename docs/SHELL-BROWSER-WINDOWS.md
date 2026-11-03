@@ -166,6 +166,10 @@ user's and every other partition, like a separate browser profile:
 ## Basics
 
 - `goBack`, `goForward`, `stop` and `reload` are element methods.
+- `goBackInNewWindow` and `goForwardInNewWindow` open a new browser window
+  with a copy of the view's history and take the step there, as a middle
+  click on Chrome's back button does. The view stays on its page. A private
+  view's window is private.
 - `src` is reflected: setting the property or the attribute navigates. A view
   drawing a browser window does not send `src` on connect, since the page is
   already loaded.

@@ -640,6 +640,14 @@ declare global {
     countMatches(selector: string): Promise<number>;
     goBack(): void;
     goForward(): void;
+    /**
+     * Go back or forward in a new browser window, as a middle click on
+     * Chrome's back button does. The window gets a copy of this view's
+     * history and this view stays on its page. A private view's window is
+     * private. Does nothing with nowhere to go.
+     */
+    goBackInNewWindow(): void;
+    goForwardInNewWindow(): void;
     stop(): void;
     reload(): void;
   }

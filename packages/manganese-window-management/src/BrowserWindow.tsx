@@ -657,8 +657,14 @@ export const BrowserWindow = ({
             onBack={drive((loaded) => {
               loaded.goBack();
             })}
+            onBackInNewWindow={drive((loaded) => {
+              loaded.goBackInNewWindow();
+            })}
             onForward={drive((loaded) => {
               loaded.goForward();
+            })}
+            onForwardInNewWindow={drive((loaded) => {
+              loaded.goForwardInNewWindow();
             })}
             onNavigate={navigate}
             onReload={drive((loaded) => {
