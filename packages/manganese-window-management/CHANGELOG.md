@@ -1,5 +1,24 @@
 # @domicile-desktop/manganese-window-management
 
+## 1.2.0
+
+### Minor Changes
+
+- fdad979: Middle-clicking Back or Forward in a browser window's address bar opens that step in a new window, as Chrome does in a new tab. The new window keeps the page's history, and the window you clicked in stays where it was.
+  
+  `<webview>` gains `goBackInNewWindow()` and `goForwardInNewWindow()`.
+
+### Patch Changes
+
+- Updated dependencies [fdad979]
+  - @domicile-desktop/sdk@2.1.0
+  - @domicile-desktop/component-library@2.0.1
+  - @domicile-desktop/manganese-address@1.0.2
+  - @domicile-desktop/manganese-host@2.0.1
+  - @domicile-desktop/manganese-page-requests@1.1.1
+  - @domicile-desktop/system-apps@1.1.1
+  - @domicile-desktop/manganese-bar@1.1.1
+
 ## 1.1.0
 
 ### Minor Changes
