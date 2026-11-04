@@ -1,5 +1,17 @@
 # @domicile-desktop/engine
 
+## 0.2.0
+
+### Minor Changes
+
+- fdad979: Middle-clicking Back or Forward in a browser window's address bar opens that step in a new window, as Chrome does in a new tab. The new window keeps the page's history, and the window you clicked in stays where it was.
+  
+  `<webview>` gains `goBackInNewWindow()` and `goForwardInNewWindow()`.
+
+### Patch Changes
+
+- 8d8417d: App windows show when the engine's GPU process falls back to software, as in some VMs: the compositor sends them in memory instead of leaving them transparent.
+
 ## 0.1.0
 
 ### Minor Changes
