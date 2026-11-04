@@ -1,5 +1,14 @@
 # @domicile-desktop/manganese-host
 
+## 2.0.1
+
+### Patch Changes
+
+- Updated dependencies [fdad979]
+  - @domicile-desktop/sdk@2.1.0
+  - @domicile-desktop/component-library@2.0.1
+  - @domicile-desktop/react@0.1.1
+
 ## 2.0.0
 
 ### Major Changes
