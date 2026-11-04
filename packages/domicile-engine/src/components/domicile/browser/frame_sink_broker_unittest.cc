@@ -252,6 +252,25 @@ class FakeClipboardObserver : public mojom::ClipboardObserver {
   mojo::Receiver<mojom::ClipboardObserver> receiver_{this};
 };
 
+// Fake producer compositing observer.
+class FakeCompositingObserver : public mojom::CompositingObserver {
+ public:
+  mojo::PendingRemote<mojom::CompositingObserver> BindRemote() {
+    return receiver_.BindNewPipeAndPassRemote();
+  }
+
+  // mojom::CompositingObserver implementation.
+  void OnCompositingChanged(bool in_memory) override {
+    modes_.push_back(in_memory);
+  }
+
+  // Every mode sent, in order. A list so tests can detect duplicates.
+  std::vector<bool> modes_;
+
+ private:
+  mojo::Receiver<mojom::CompositingObserver> receiver_{this};
+};
+
 // Fake producer display capture observer. These tests send no frames.
 class FakeDisplayCaptureObserver : public mojom::DisplayCaptureObserver {
  public:
@@ -1360,6 +1379,49 @@ TEST_F(FrameSinkBrokerTest, AHotplugReachesEveryObserver) {
   ASSERT_EQ(second.lists_.size(), 1u);
   EXPECT_EQ(first.lists_[0][0]->bounds, gfx::Rect(1920, 1080));
   EXPECT_EQ(second.lists_[0][0]->bounds, gfx::Rect(1920, 1080));
+}
+
+TEST_F(FrameSinkBrokerTest, AnObserverIsToldHowTheBrowserComposites) {
+  // A GPU process that fell back to software before the producer connected.
+  broker()->OnCompositingChanged(/*in_memory=*/true);
+
+  mojo::Remote<mojom::FrameSinkBroker> remote;
+  broker()->Bind(remote.BindNewPipeAndPassReceiver());
+  FakeCompositingObserver observer;
+  remote->ObserveCompositing(observer.BindRemote());
+  RunUntilIdle();
+
+  EXPECT_EQ(observer.modes_, std::vector<bool>{true});
+}
+
+TEST_F(FrameSinkBrokerTest, AFallBackToSoftwareReachesEveryObserver) {
+  broker()->OnCompositingChanged(/*in_memory=*/false);
+  mojo::Remote<mojom::FrameSinkBroker> remote;
+  broker()->Bind(remote.BindNewPipeAndPassReceiver());
+  FakeCompositingObserver observer;
+  remote->ObserveCompositing(observer.BindRemote());
+  RunUntilIdle();
+
+  broker()->OnCompositingChanged(/*in_memory=*/true);
+  RunUntilIdle();
+
+  EXPECT_EQ(observer.modes_, (std::vector<bool>{false, true}));
+}
+
+TEST_F(FrameSinkBrokerTest, AnUnchangedCompositingModeIsNotSentAgain) {
+  // GPU info updates arrive for many reasons; only a change is news.
+  mojo::Remote<mojom::FrameSinkBroker> remote;
+  broker()->Bind(remote.BindNewPipeAndPassReceiver());
+  FakeCompositingObserver observer;
+  remote->ObserveCompositing(observer.BindRemote());
+  RunUntilIdle();
+  EXPECT_TRUE(observer.modes_.empty());
+
+  broker()->OnCompositingChanged(/*in_memory=*/true);
+  broker()->OnCompositingChanged(/*in_memory=*/true);
+  RunUntilIdle();
+
+  EXPECT_EQ(observer.modes_, std::vector<bool>{true});
 }
 
 TEST_F(FrameSinkBrokerTest, ADisplayWithAWindowIsCaptured) {

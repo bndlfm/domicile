@@ -278,6 +278,7 @@ Callbacks (engine → compositor):
 | `frame_done(surface, frame)` | `wl_surface.frame`'s `done`: viz acked the frame |
 | `presented(surface, frame, time_ns, refresh_ns, flags)` | `wp_presentation_feedback`: from the frame's `FrameTimingDetails`, or discarded |
 | `disconnected()` | none: the browser went away, so the next page's `hello` is a new engine ([THE-DOMICILE-BINARY.md](THE-DOMICILE-BINARY.md#crashes-are-recovered)) |
+| `compositing(in_memory)` | none: the browser composites in memory, or on the GPU. Sent once known and on every change ([Software output](A-DESKTOP-ON-A-TTY.md#software-output)) |
 
 - Only `crop` fills the `<app>` box, so client-side shadows are not drawn. An
   empty rectangle means the whole buffer or surface. `domicile_surface_submit`

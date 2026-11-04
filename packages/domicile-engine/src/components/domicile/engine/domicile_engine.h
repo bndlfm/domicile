@@ -415,6 +415,11 @@ typedef struct DomicileEngineCallbacks {
   // its chrome socket. See "Crashes are recovered" in
   // docs/architecture/THE-DOMICILE-BINARY.md.
   void (*disconnected)(void* user_data);
+  // Nonzero when the browser composites in memory, where it shows no dmabuf:
+  // hand it windows with domicile_surface_import_shm. Called once the browser
+  // knows, and on every change, as when its GPU process falls back to
+  // software. An older engine never calls it.
+  void (*compositing)(void* user_data, int in_memory);
 } DomicileEngineCallbacks;
 
 // Returns nonzero. Exists so a compositor can tell an engine that calls

@@ -99,10 +99,10 @@ Usual causes:
 
 ### Scanout and render cards can differ
 
-A GPU process that falls back to software on its own, often after restarts on
-`GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT`, draws a desktop whose windows are
-blank: the compositor still sends dmabufs. `DOMICILE_SOFTWARE_COMPOSITING=yes`
-composites on the CPU from the start
+A GPU process that falls back to software on its own sends windows in memory
+once the engine says so: the compositor logs "the engine changed how it
+composites". A client that drew in dmabufs before then stays blank.
+`DOMICILE_SOFTWARE_COMPOSITING=yes` composites on the CPU from the start
 ([Software output](architecture/A-DESKTOP-ON-A-TTY.md#software-output)).
 
 A common cause is the two card choices landing on different cards:

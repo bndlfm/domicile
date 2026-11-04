@@ -330,6 +330,25 @@ void FrameSinkBroker::OnDisplaysChanged(
   }
 }
 
+void FrameSinkBroker::ObserveCompositing(
+    mojo::PendingRemote<mojom::CompositingObserver> observer) {
+  const mojo::RemoteSetElementId id =
+      compositing_observers_.Add(std::move(observer));
+  if (in_memory_) {
+    compositing_observers_.Get(id)->OnCompositingChanged(*in_memory_);
+  }
+}
+
+void FrameSinkBroker::OnCompositingChanged(bool in_memory) {
+  if (in_memory_ == in_memory) {
+    return;
+  }
+  in_memory_ = in_memory;
+  for (auto& observer : compositing_observers_) {
+    observer->OnCompositingChanged(in_memory);
+  }
+}
+
 void FrameSinkBroker::CaptureDisplay(
     int64_t display_id,
     const gfx::Size& size,
