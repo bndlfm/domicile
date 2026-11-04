@@ -1,5 +1,17 @@
 # domicile
 
+## 1.1.1
+
+### Patch Changes
+
+- c44f0f2: A desktop on a tty in VirtualBox (VMSVGA) or VMware with 3D acceleration off composites on the CPU, so app windows show instead of staying transparent.
+- @domicile-desktop/manganese@1.1.1
+  - @domicile-desktop/app-history@0.0.3
+  - @domicile-desktop/app-settings@0.1.1
+  - @domicile-desktop/shell-simple@0.0.3
+  - @domicile-desktop/shell-splash@0.0.3
+  - @domicile-desktop/builder@0.1.1
+
 ## 1.1.0
 
 ### Minor Changes
