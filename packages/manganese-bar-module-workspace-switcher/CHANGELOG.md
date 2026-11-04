@@ -1,5 +1,15 @@
 # @domicile-desktop/manganese-bar-module-workspace-switcher
 
+## 1.1.1
+
+### Patch Changes
+
+- 5520529: Move the workspace switcher's chip at once when switching workspaces, so the old workspace no longer flashes. Only the hover square fades.
+- Updated dependencies [fdad979]
+  - @domicile-desktop/manganese-window-management@1.2.0
+  - @domicile-desktop/component-library@2.0.1
+  - @domicile-desktop/manganese-bar@1.1.1
+
 ## 1.1.0
 
 ### Minor Changes

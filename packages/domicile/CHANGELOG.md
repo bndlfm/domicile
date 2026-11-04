@@ -1,5 +1,16 @@
 # domicile
 
+## 1.1.1
+
+### Patch Changes
+
+- @domicile-desktop/manganese@1.1.1
+  - @domicile-desktop/app-history@0.0.3
+  - @domicile-desktop/app-settings@0.1.1
+  - @domicile-desktop/shell-simple@0.0.3
+  - @domicile-desktop/shell-splash@0.0.3
+  - @domicile-desktop/builder@0.1.1
+
 ## 1.1.0
 
 ### Minor Changes
