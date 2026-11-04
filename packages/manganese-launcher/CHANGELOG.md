@@ -1,5 +1,16 @@
 # @domicile-desktop/manganese-launcher
 
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [fdad979]
+  - @domicile-desktop/sdk@2.1.0
+  - @domicile-desktop/component-library@2.0.1
+  - @domicile-desktop/manganese-address@1.0.2
+  - @domicile-desktop/manganese-host@2.0.1
+  - @domicile-desktop/system-apps@1.1.1
+
 ## 1.1.0
 
 ### Minor Changes

@@ -1,5 +1,13 @@
 # @domicile-desktop/manganese-bar-module-launcher-button
 
+## 1.0.2
+
+### Patch Changes
+
+- 20f560e: Show the launcher button's whole hover background instead of cutting off its end.
+- @domicile-desktop/component-library@2.0.1
+  - @domicile-desktop/manganese-launcher@1.1.1
+
 ## 1.0.1
 
 ### Patch Changes

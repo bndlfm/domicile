@@ -1,5 +1,13 @@
 # @domicile-desktop/manganese-bar-module-mode
 
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [fdad979]
+  - @domicile-desktop/manganese-window-management@1.2.0
+  - @domicile-desktop/component-library@2.0.1
+
 ## 1.0.1
 
 ### Patch Changes
