@@ -1,5 +1,13 @@
 # @domicile-desktop/shell-splash
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [fdad979]
+  - @domicile-desktop/sdk@2.1.0
+  - @domicile-desktop/component-library@2.0.1
+
 ## 0.0.2
 
 ### Patch Changes

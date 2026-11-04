@@ -1,5 +1,12 @@
 # @domicile-desktop/manganese-inbox-google-messages
 
+## 0.1.1
+
+### Patch Changes
+
+- @domicile-desktop/manganese-bar-module-google-messages@1.0.1
+  - @domicile-desktop/manganese-notifications@1.1.1
+
 ## 0.1.0
 
 ### Minor Changes

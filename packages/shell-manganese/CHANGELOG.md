@@ -1,5 +1,49 @@
 # @domicile-desktop/manganese
 
+## 1.1.1
+
+### Patch Changes
+
+- 93e6a4b: Put the tray right after the launcher button again, with no space between them.
+- Updated dependencies [20f560e]
+- Updated dependencies [fdad979]
+- Updated dependencies [a333799]
+  - @domicile-desktop/manganese-bar-module-launcher-button@1.0.2
+  - @domicile-desktop/sdk@2.1.0
+  - @domicile-desktop/manganese-window-management@1.2.0
+  - @domicile-desktop/manganese-bar-module-workspace-switcher@1.1.1
+  - @domicile-desktop/component-library@2.0.1
+  - @domicile-desktop/manganese-bar-module-battery@1.1.1
+  - @domicile-desktop/manganese-bar-module-bluetooth@1.1.1
+  - @domicile-desktop/manganese-bar-module-brightness@2.0.1
+  - @domicile-desktop/manganese-bar-module-cast@0.1.1
+  - @domicile-desktop/manganese-bar-module-downloads@0.1.1
+  - @domicile-desktop/manganese-bar-module-gmail@2.0.1
+  - @domicile-desktop/manganese-bar-module-google-messages@1.0.1
+  - @domicile-desktop/manganese-bar-module-idle-inhibitor@1.1.1
+  - @domicile-desktop/manganese-bar-module-keymap@0.1.1
+  - @domicile-desktop/manganese-bar-module-network@1.1.1
+  - @domicile-desktop/manganese-bar-module-sharing@1.1.1
+  - @domicile-desktop/manganese-bar-module-tray@1.1.1
+  - @domicile-desktop/manganese-bar-module-volume@2.0.1
+  - @domicile-desktop/manganese-clipboard@1.1.1
+  - @domicile-desktop/manganese-host@2.0.1
+  - @domicile-desktop/manganese-inbox-gmail@0.1.1
+  - @domicile-desktop/manganese-launcher@1.1.1
+  - @domicile-desktop/manganese-lock@1.0.2
+  - @domicile-desktop/manganese-notifications@1.1.1
+  - @domicile-desktop/manganese-wallpaper@1.1.1
+  - @domicile-desktop/react@0.1.1
+  - @domicile-desktop/system-apps@1.1.1
+  - @domicile-desktop/system-audio@1.1.1
+  - @domicile-desktop/system-backlight@1.1.1
+  - @domicile-desktop/manganese-bar@1.1.1
+  - @domicile-desktop/manganese-bar-module-clock@1.0.2
+  - @domicile-desktop/manganese-bar-module-notifications@1.1.1
+  - @domicile-desktop/manganese-bar-module-theme-switch@1.1.1
+  - @domicile-desktop/manganese-quick-settings@1.0.1
+  - @domicile-desktop/manganese-inbox-google-messages@0.1.1
+
 ## 1.1.0
 
 ### Minor Changes
