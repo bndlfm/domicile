@@ -182,6 +182,11 @@ class FrameSinkBroker : public mojom::FrameSinkBroker {
   // producer that connects later owns its own clipboard state.
   void OnCopied(mojom::Clipboard clipboard, const ClipboardContents& contents);
 
+  // Forwards how the browser composites to observers, when it changes, and
+  // stores it for observers that connect later. `in_memory` is true while
+  // the browser composites in software.
+  void OnCompositingChanged(bool in_memory);
+
   // mojom::FrameSinkBroker implementation.
   void CreateFrameSink(
       mojo::PendingRemote<viz::mojom::CompositorFrameSinkClient> client,
@@ -218,6 +223,8 @@ class FrameSinkBroker : public mojom::FrameSinkBroker {
       mojo::PendingRemote<mojom::ClipboardObserver> observer) override;
   void ObserveDisplays(
       mojo::PendingRemote<mojom::DisplayListObserver> observer) override;
+  void ObserveCompositing(
+      mojo::PendingRemote<mojom::CompositingObserver> observer) override;
   void CaptureDisplay(
       int64_t display_id,
       const gfx::Size& size,
@@ -337,6 +344,11 @@ class FrameSinkBroker : public mojom::FrameSinkBroker {
 
   // The last display list, or empty if none yet. See OnDisplaysChanged.
   std::vector<mojom::DisplayPtr> displays_;
+
+  mojo::RemoteSet<mojom::CompositingObserver> compositing_observers_;
+  // Whether the browser composites in memory, or nullopt until the embedder
+  // says. See OnCompositingChanged.
+  std::optional<bool> in_memory_;
 };
 
 }  // namespace domicile

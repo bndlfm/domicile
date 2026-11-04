@@ -102,6 +102,8 @@ struct EngineEvent {
     kImported,
     // The broker hung up: the browser is gone.
     kDisconnected,
+    // How the browser composites: on the GPU, or in memory.
+    kCompositing,
   };
 
   Type type = Type::kConfigure;
@@ -134,6 +136,8 @@ struct EngineEvent {
   int64_t time_ns = 0;
   int64_t refresh_ns = 0;
   uint32_t flags = 0;
+  // kCompositing: whether the browser composites in memory.
+  bool in_memory = false;
 };
 
 // Queue of engine events with a pollable fd.

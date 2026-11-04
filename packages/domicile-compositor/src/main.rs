@@ -497,7 +497,8 @@ struct DomicileCompositor {
     /// a dmabuf, or memfds for an engine on the CPU. See [`crate::uploads`].
     uploads: Uploads<Upload>,
     /// Whether the engine composites on the CPU, so shm frames go to it in
-    /// memory. See [`crate::memory_frames`].
+    /// memory: as the launcher said, then as the engine says. See
+    /// [`crate::memory_frames`] and [`DomicileCompositor::engine_composites`].
     software_compositing: bool,
     /// Whether emulated input goes to the engine instead of the seat, as on
     /// a headless desk. See [`crate::eis::Compositor::engine_takes_input`].

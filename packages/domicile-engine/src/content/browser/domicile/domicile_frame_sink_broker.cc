@@ -31,6 +31,7 @@
 #include "content/browser/gpu/gpu_data_manager_impl.h"
 #include "components/viz/common/gpu/raster_context_provider.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/gpu_data_manager_observer.h"
 #include "content/public/browser/gpu_utils.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -328,7 +329,7 @@ std::optional<viz::FrameSinkId> DisplayCaptureTarget(int64_t display_id) {
 // The socket path is the only access control. A FrameSinkBroker pipe can
 // allocate any frame sink in viz. Renderers cannot get the invitation, and the
 // ExternalSurfaceProvider they do get cannot allocate.
-class DomicileBrowserService {
+class DomicileBrowserService : public content::GpuDataManagerObserver {
  public:
   DomicileBrowserService()
       : broker_(GetHostFrameSinkManager(),
@@ -350,6 +351,11 @@ class DomicileBrowserService {
     ui::OzonePlatform::GetInstance()->SetDomicileCopiedCallback(
         base::BindRepeating(&DomicileBrowserService::Copied,
                             base::Unretained(this)));
+    // A GPU process that falls back to software disables GPU compositing
+    // after the producer may have connected, so the producer hears each
+    // change. Never removed: this is a NoDestructor.
+    content::GpuDataManagerImpl::GetInstance()->AddObserver(this);
+    OnGpuInfoUpdate();
     const base::CommandLine& command_line =
         *base::CommandLine::ForCurrentProcess();
     // Only on DRM or a headless desk. A nested run's screen is the host's
@@ -376,7 +382,13 @@ class DomicileBrowserService {
   DomicileBrowserService(const DomicileBrowserService&) = delete;
   DomicileBrowserService& operator=(const DomicileBrowserService&) = delete;
 
-  ~DomicileBrowserService() = default;
+  ~DomicileBrowserService() override = default;
+
+  // content::GpuDataManagerObserver implementation.
+  void OnGpuInfoUpdate() override {
+    broker_.OnCompositingChanged(
+        content::GpuDataManagerImpl::GetInstance()->IsGpuCompositingDisabled());
+  }
 
   void Bind(
       mojo::PendingReceiver<domicile::mojom::ExternalSurfaceProvider> receiver,

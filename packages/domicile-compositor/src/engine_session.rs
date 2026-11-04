@@ -645,7 +645,8 @@ impl EngineSession {
                 | Event::CaptureEnded { .. }
                 | Event::FrameDone { .. }
                 | Event::Presented { .. }
-                | Event::Disconnected => {}
+                | Event::Disconnected
+                | Event::Compositing { .. } => {}
             }
         }
         dispatched.events = events;

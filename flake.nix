@@ -1490,6 +1490,98 @@
           '';
         };
 
+        # A tty desktop on the GPU whose engine falls back to the CPU: 2D
+        # virtio-gpu with GPU compositing forced, so the engine finds no GBM,
+        # as on a card the launcher took for 3D. App windows still reach the
+        # screen. See
+        # docs/architecture/A-DESKTOP-ON-A-TTY.md#software-output.
+        #
+        # Runs the pinned engine, as `tty-on-a-card-with-no-3d` does.
+        tty-with-an-engine-that-fell-back-to-the-cpu = pkgs.testers.runNixOSTest {
+          name = "tty-with-an-engine-that-fell-back-to-the-cpu";
+          extraPythonPackages = python: [ python.pillow ];
+          nodes.machine = {
+            imports = [ self.nixosModules.domicile ];
+            programs.domicile.enable = true;
+            virtualisation = {
+              memorySize = 4096;
+              cores = 2;
+              qemu.options = [ "-vga none" "-device virtio-gpu-pci,xres=1280,yres=800" ];
+            };
+            users.users.alice = {
+              isNormalUser = true;
+              uid = 1000;
+              extraGroups = [ "domicile" "video" "input" ];
+            };
+            services.getty.autologinUser = "alice";
+            environment.loginShellInit = ''
+              if [ "$(tty)" = /dev/tty1 ]; then
+                export DOMICILE_SOFTWARE_COMPOSITING=no
+                export DOMICILE_ENGINE_ARGS="--log-level=0 --vmodule=*ozone*=1,*domicile*=1,*viz*=1"
+                export RUST_LOG=domicile_compositor=debug
+                exec ${self.packages.${system}.simple}/bin/simple >/tmp/domicile.log 2>&1
+              fi
+            '';
+            environment.systemPackages = [ pkgs.foot ];
+            fonts.enableDefaultPackages = true;
+          };
+          testScript = ''
+            import datetime as dt
+            import os
+            from PIL import Image
+
+            def colors_on_the_screen(name):
+                """Each color on the screen and its share of the pixels."""
+                machine.screenshot(name)
+                image = Image.open(os.path.join(machine.out_dir, f"{name}.png")).convert("RGB")
+                pixels = image.width * image.height
+                colors = image.getcolors(maxcolors=pixels)
+                assert colors is not None
+                return {color: count / pixels for count, color in colors}
+
+            def the_desktop_shows_a_window():
+                machine.wait_until_succeeds("ls /run/user/1000/wayland-[0-9]", timeout=dt.timedelta(seconds=120))
+
+                def page_is_up(_):
+                    shares = colors_on_the_screen("desk")
+                    color = max(shares, key=lambda color: shares[color])
+                    return shares[color] > 0.5 and color != (0, 0, 0)
+                retry(page_is_up, timeout=dt.timedelta(seconds=300))
+
+                machine.succeed(
+                    "su alice -c 'XDG_RUNTIME_DIR=/run/user/1000 "
+                    "WAYLAND_DISPLAY=$(basename $(ls /run/user/1000/wayland-[0-9] | head -1)) "
+                    "foot --override=colors-dark.background=3366cc "
+                    "--override=colors-light.background=3366cc "
+                    "--window-size-pixels=400x300 sleep 600' >/tmp/foot.log 2>&1 &")
+
+                def window_is_up(_):
+                    return colors_on_the_screen("window").get((0x33, 0x66, 0xCC), 0) > 0.04
+                retry(window_is_up, timeout=dt.timedelta(seconds=300))
+
+            machine.wait_for_unit("multi-user.target")
+            try:
+                the_desktop_shows_a_window()
+            except Exception:
+                shares = colors_on_the_screen("failed")
+                screen = sorted(shares.items(), key=lambda share: -share[1])[:4]
+                machine.execute("systemctl stop getty@tty1.service; pkill -u alice; sleep 3")
+                for command in [
+                    "ls -l /sys/class/drm/*/device/driver",
+                    "dmesg | grep -i vmw | tail -8 | cut -c1-200",
+                    "grep -iE 'GBM|composites|software|refused|no GPU|gpu_init|GL ' /tmp/domicile.log "
+                    "| sort | uniq -c | sort -rn | head -12 | cut -c1-220 || true",
+                    "grep -E 'FATAL|Check failed|ERROR:' /tmp/domicile.log | tail -8 | cut -c1-220 || true",
+                    "grep -E ' (WARN|ERROR) ' /tmp/domicile.log | tail -6 | cut -c1-200 || true",
+                    "tail -3 /tmp/foot.log | cut -c1-160",
+                ]:
+                    print(f"$ {command}")
+                    print(machine.execute(f"{command} 2>&1")[1])
+                print("the screen's biggest colors:", screen)
+                raise
+          '';
+        };
+
         # Manganese on two monitors: one 2D virtio-gpu card with two heads,
         # started cold. Checks what docs/HARDWARE-CHECKS.md#several-monitors
         # asks of a lit panel: a bar and a wallpaper on each, keyboard focus

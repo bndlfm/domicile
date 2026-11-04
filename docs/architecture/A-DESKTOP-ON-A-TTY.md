@@ -232,8 +232,15 @@ vkms) gives the GPU process no GL. The desktop is composited on the CPU instead.
 - **Compositor:** gets `--software-compositing yes` and hands windows over in
   shared memory. See
   [WINDOW-COMPOSITING.md](WINDOW-COMPOSITING.md#wl_shm-clients-on-the-cpu).
-- `--disable-gpu-process-crash-limit` stays: a GPU process that fell back to
-  software on its own would get dmabufs it cannot show.
+- **A GPU process that falls back on its own** (no GBM on a card the launcher
+  took for 3D) composites in software too. The browser says so
+  (`compositing` in the C ABI, from `GpuDataManagerObserver`). The compositor
+  then hands windows over in memory and withdraws `zwp_linux_dmabuf_v1`, so
+  clients that connect later draw in memory. A client already drawing in
+  dmabufs stays blank. The VM check `tty-with-an-engine-that-fell-back-to-the-cpu`
+  covers it.
+- `--disable-gpu-process-crash-limit` stays: a GPU process relaunched after a
+  crash keeps the GPU.
 - **Not covered:** no vsync provider (viz's begin frames pace painting) and
   casts of a window in memory.
 

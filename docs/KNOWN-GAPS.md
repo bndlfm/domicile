@@ -14,6 +14,9 @@ the detail, when there is one. Remove a gap when it's fixed.
 - **Browser window context menus have only Chrome's core items.** No spelling
   suggestions, page or extension items.
 - **Client-drawn cursor surfaces show a plain arrow.**
+- **A GL client that started before the engine fell back to software stays
+  blank.** Its dmabufs are not copied into memory.
+  [A-DESKTOP-ON-A-TTY.md](/docs/architecture/A-DESKTOP-ON-A-TTY.md#software-output).
 - **Unknown: whether viz hit testing must agree with Domicile's.**
   [ENGINE-FORK.md](/docs/architecture/ENGINE-FORK.md#open-questions).
 

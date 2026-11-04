@@ -330,7 +330,8 @@ GBM buffer and submits that (`uploads.rs`, `shm_upload.rs`).
 
 An engine that composites in software reads only memory
 ([Software output](A-DESKTOP-ON-A-TTY.md#software-output)). With
-`--software-compositing`, the compositor copies each `wl_shm` frame whole into
+`--software-compositing`, or once the engine says it composites in memory, the
+compositor copies each `wl_shm` frame whole into
 a memfd of the window's (`memory_frames.rs`) and imports it with
 `domicile_surface_import_shm`.
 
