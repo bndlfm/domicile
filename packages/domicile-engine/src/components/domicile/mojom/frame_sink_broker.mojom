@@ -195,6 +195,17 @@ interface ClipboardObserver {
   OnCopied(Clipboard clipboard, map<string, array<uint8>> contents);
 };
 
+// Tells a producer whether the browser composites on the GPU or in memory.
+//
+// A GPU process that falls back to software shows no dmabuf, so the producer
+// hands it windows in shared memory instead. See
+// docs/architecture/A-DESKTOP-ON-A-TTY.md#software-output.
+interface CompositingObserver {
+  // True when the browser composites in memory. Sent once known, and on every
+  // change.
+  OnCompositingChanged(bool in_memory);
+};
+
 // A captured frame's pixels.
 union CapturedPixels {
   // GPU compositing: a dmabuf.
@@ -382,6 +393,10 @@ interface FrameSinkBroker {
   // for a hotplug. If the browser has not read the displays yet, nothing is
   // sent until it has.
   ObserveDisplays(pending_remote<DisplayListObserver> observer);
+
+  // Registers `observer` for how the browser composites and sends the current
+  // mode, once known.
+  ObserveCompositing(pending_remote<CompositingObserver> observer);
 
   // Captures what a display shows, for a screen cast. Viz runs a
   // FrameSinkVideoCapturer on the root frame sink of the browser window on

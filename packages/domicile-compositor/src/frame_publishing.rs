@@ -326,6 +326,27 @@ impl DomicileCompositor {
         published
     }
 
+    /// Follows how the engine composites: windows go to it in memory while it
+    /// composites in software, as after its GPU process falls back.
+    ///
+    /// Going to memory withdraws `zwp_linux_dmabuf_v1`, so clients that
+    /// connect later draw in memory too. Chromium never returns to GPU
+    /// compositing, so the global is not put back.
+    pub fn engine_composites(&mut self, in_memory: bool) {
+        if in_memory == self.software_compositing {
+            return;
+        }
+        warn!(
+            in_memory,
+            "the engine changed how it composites; windows follow it"
+        );
+        self.software_compositing = in_memory;
+        if let (true, Some(global)) = (in_memory, &self.dmabuf_global) {
+            self.dmabuf_state
+                .disable_global::<DomicileCompositor>(&self.display_handle, global);
+        }
+    }
+
     /// Copy the commit's buffer into a free buffer of `app_id`'s: on the GPU,
     /// or in memory for an engine on the CPU.
     ///
@@ -349,9 +370,12 @@ impl DomicileCompositor {
             return Err(ShmRefused::NoMemoryImport);
         }
         let shape = shm_shape(commit.buffer).ok_or(ShmRefused::Unreadable)?;
-        let taken = self.uploads.take(app_id, shape, |shape| {
-            MemoryFrame::allocate(shape).map(Upload::Memory)
-        })?;
+        let taken = self.uploads.take(
+            app_id,
+            shape,
+            |upload| matches!(upload, Upload::Memory(_)),
+            |shape| MemoryFrame::allocate(shape).map(Upload::Memory),
+        )?;
         they_were_dropped(self.engine.as_mut(), &taken.dropped);
         let Some(Upload::Memory(target)) = self.uploads.get_mut(taken.id) else {
             unreachable!("an engine on the CPU has only memory frames")
@@ -400,9 +424,12 @@ impl DomicileCompositor {
         let gbm = gpu.gbm.as_ref().ok_or(ShmRefused::NoAllocator)?;
         let shape = shm_shape(commit.buffer).ok_or(ShmRefused::Unreadable)?;
         let modifiers = render_modifiers(&gpu.renderer, shape.fourcc);
-        let taken = self.uploads.take(app_id, shape, |shape| {
-            gbm.allocate(shape, &modifiers).map(Upload::Gpu)
-        })?;
+        let taken = self.uploads.take(
+            app_id,
+            shape,
+            |upload| matches!(upload, Upload::Gpu(_)),
+            |shape| gbm.allocate(shape, &modifiers).map(Upload::Gpu),
+        )?;
         they_were_dropped(self.engine.as_mut(), &taken.dropped);
         let Some(Upload::Gpu(target)) = self.uploads.get_mut(taken.id) else {
             unreachable!("an engine on the GPU has only GPU buffers")

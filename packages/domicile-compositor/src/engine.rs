@@ -380,6 +380,11 @@ pub enum Event {
     /// The browser went away. Nothing follows from this engine; the next
     /// page's hello comes from a new one. See [`crate::which_engine`].
     Disconnected,
+
+    /// How the browser composites: `in_memory` while it composites in
+    /// software, where it shows no dmabuf. Sent once the browser knows, and
+    /// when its GPU process falls back.
+    Compositing { in_memory: bool },
 }
 
 /// When and how a frame reached the screen.
@@ -444,6 +449,7 @@ struct Callbacks {
     imported: Option<extern "C" fn(*mut c_void, SurfaceId, Request, BufferId)>,
     connected_displays: Option<extern "C" fn(*mut c_void, *const RawConnectedDisplay, u32)>,
     disconnected: Option<extern "C" fn(*mut c_void)>,
+    compositing: Option<extern "C" fn(*mut c_void, c_int)>,
 }
 
 /// `DomicileClipboardItem`, laid out as in the C header: one type a copy can be
@@ -1640,6 +1646,7 @@ fn join(
         imported: Some(on_imported),
         connected_displays: Some(on_connected_displays),
         disconnected: Some(on_disconnected),
+        compositing: Some(on_compositing),
     };
     let socket_c = CString::new(socket.as_os_str().as_encoded_bytes())?;
     let connect: Symbol<unsafe extern "C" fn(*const c_char, Callbacks) -> *mut Handle> = symbol(
@@ -1914,6 +1921,15 @@ extern "C" fn on_disconnected(user_data: *mut c_void) {
     push(user_data, Event::Disconnected);
 }
 
+extern "C" fn on_compositing(user_data: *mut c_void, in_memory: c_int) {
+    push(
+        user_data,
+        Event::Compositing {
+            in_memory: in_memory != 0,
+        },
+    );
+}
+
 extern "C" fn on_frame_done(user_data: *mut c_void, surface: SurfaceId, frame: u64) {
     push(user_data, Event::FrameDone { surface, frame });
 }
@@ -2096,10 +2112,10 @@ mod tests {
     }
 
     #[test]
-    fn the_callbacks_are_the_user_data_and_fourteen_pointers_the_c_header_declares() {
-        // `released` follows `configure`, and `disconnected` is last, as in
+    fn the_callbacks_are_the_user_data_and_fifteen_pointers_the_c_header_declares() {
+        // `released` follows `configure`, and `compositing` is last, as in
         // the header.
-        assert_eq!(std::mem::size_of::<Callbacks>(), 15 * 8);
+        assert_eq!(std::mem::size_of::<Callbacks>(), 16 * 8);
         assert_eq!(std::mem::offset_of!(Callbacks, released), 2 * 8);
         assert_eq!(std::mem::offset_of!(Callbacks, copied_items), 9 * 8);
         assert_eq!(std::mem::offset_of!(Callbacks, frame_done), 10 * 8);
@@ -2107,6 +2123,7 @@ mod tests {
         assert_eq!(std::mem::offset_of!(Callbacks, imported), 12 * 8);
         assert_eq!(std::mem::offset_of!(Callbacks, connected_displays), 13 * 8);
         assert_eq!(std::mem::offset_of!(Callbacks, disconnected), 14 * 8);
+        assert_eq!(std::mem::offset_of!(Callbacks, compositing), 15 * 8);
     }
 
     #[test]
@@ -2153,6 +2170,22 @@ mod tests {
                     request: 6,
                     buffer: None,
                 },
+            ]
+        );
+    }
+
+    #[test]
+    fn any_nonzero_compositing_is_in_memory() {
+        let events = RefCell::new(Vec::new());
+        let queue = (&events as *const RefCell<Vec<Event>>) as *mut c_void;
+        on_compositing(queue, 1);
+        on_compositing(queue, 0);
+
+        assert_eq!(
+            events.into_inner(),
+            vec![
+                Event::Compositing { in_memory: true },
+                Event::Compositing { in_memory: false },
             ]
         );
     }

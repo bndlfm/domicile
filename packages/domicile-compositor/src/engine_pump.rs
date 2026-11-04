@@ -222,6 +222,7 @@ impl DomicileCompositor {
                     frame,
                     captured,
                 } => self.cast_captured(capture, frame, captured),
+                engine::Event::Compositing { in_memory } => self.engine_composites(in_memory),
                 // Acted on at the next hello, which is the new engine's.
                 engine::Event::Disconnected => {
                     warn!("the engine this desktop was drawing through went away");

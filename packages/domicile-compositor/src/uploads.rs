@@ -7,7 +7,8 @@
 //! - A buffer stays out until viz releases it. Copying into one that is out
 //!   would tear.
 //! - When every buffer is out, a new one is allocated instead of waiting.
-//! - After a resize, buffers of the old shape are dropped once free.
+//! - After a resize, buffers of the old shape are dropped once free, as are
+//!   GPU buffers once the engine composites in memory.
 //!   [`Uploads::take`] returns their ids so the caller can tell the engine.
 
 use std::collections::HashMap;
@@ -60,17 +61,18 @@ impl<B> Default for Uploads<B> {
 }
 
 impl<B> Uploads<B> {
-    /// Marks a free `shape` buffer for `app_id` as out, allocating one if none
-    /// is free.
+    /// Marks a free `shape` buffer for `app_id` that `fits` as out,
+    /// allocating one if none is free.
     ///
     /// On allocation failure nothing is marked out.
     pub fn take<E>(
         &mut self,
         app_id: &str,
         shape: Shape,
+        fits: impl Fn(&B) -> bool,
         allocate: impl FnOnce(Shape) -> Result<B, E>,
     ) -> Result<Taken, E> {
-        let dropped = self.drop_stale(app_id, shape);
+        let dropped = self.drop_stale(app_id, shape, fits);
         let free = self
             .windows
             .get_mut(app_id)
@@ -138,16 +140,23 @@ impl<B> Uploads<B> {
         gone
     }
 
-    /// Drops `app_id`'s free buffers that are not `shape`.
+    /// Drops `app_id`'s free buffers that are not `shape` or do not `fit`.
     ///
     /// Buffers viz still holds are kept until they come back, so the import is
     /// not removed while viz reads it.
-    fn drop_stale(&mut self, app_id: &str, shape: Shape) -> Vec<UploadId> {
+    fn drop_stale(
+        &mut self,
+        app_id: &str,
+        shape: Shape,
+        fits: impl Fn(&B) -> bool,
+    ) -> Vec<UploadId> {
         let Some(slots) = self.windows.get_mut(app_id) else {
             return Vec::new();
         };
         let stale: Vec<UploadId> = slots
-            .extract_if(.., |slot| !slot.out && slot.shape != shape)
+            .extract_if(.., |slot| {
+                !slot.out && (slot.shape != shape || !fits(&slot.buffer))
+            })
             .map(|slot| slot.id)
             .collect();
         for id in &stale {
@@ -185,7 +194,9 @@ mod tests {
     }
 
     fn take(uploads: &mut Uploads<Shape>, app_id: &str, shape: Shape) -> Taken {
-        uploads.take(app_id, shape, allocate).expect("never fails")
+        uploads
+            .take(app_id, shape, |_| true, allocate)
+            .expect("never fails")
     }
 
     #[test]
@@ -245,7 +256,10 @@ mod tests {
     #[test]
     fn a_failed_allocation_leaves_nothing_out() {
         let mut uploads: Uploads<Shape> = Uploads::default();
-        assert_eq!(uploads.take("a", SMALL, |_| Err("no gpu")), Err("no gpu"));
+        assert_eq!(
+            uploads.take("a", SMALL, |_| true, |_| Err("no gpu")),
+            Err("no gpu")
+        );
 
         let taken = take(&mut uploads, "a", SMALL);
         uploads.give_back(taken.id);
@@ -265,6 +279,24 @@ mod tests {
 
         assert_eq!(gone, vec![out.id, free.id]);
         assert!(uploads.get(other.id).is_some());
+    }
+
+    #[test]
+    fn a_free_buffer_of_another_kind_is_dropped_not_handed_out() {
+        // An engine that falls back to memory needs memfds, not GPU buffers.
+        let mut uploads = Uploads::default();
+        let on_the_gpu = uploads
+            .take("a", SMALL, |kind| *kind == 'g', |_| Ok::<_, ()>('g'))
+            .expect("allocated");
+        uploads.give_back(on_the_gpu.id);
+
+        let in_memory = uploads
+            .take("a", SMALL, |kind| *kind == 'm', |_| Ok::<_, ()>('m'))
+            .expect("allocated");
+
+        assert_eq!(in_memory.dropped, vec![on_the_gpu.id]);
+        assert_eq!(uploads.get(in_memory.id), Some(&'m'));
+        assert!(uploads.get(on_the_gpu.id).is_none());
     }
 
     #[test]

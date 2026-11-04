@@ -689,6 +689,37 @@ class Copies : public mojom::ClipboardObserver {
   mojo::Receiver<mojom::ClipboardObserver> receiver_{this};
 };
 
+// Forwards how the browser composites to the compositor.
+//
+// Separate from Surface because the mode applies to every window, including
+// those not yet made.
+class Compositing : public mojom::CompositingObserver {
+ public:
+  explicit Compositing(EngineEventQueue* queue) : queue_(queue) {}
+
+  Compositing(const Compositing&) = delete;
+  Compositing& operator=(const Compositing&) = delete;
+
+  ~Compositing() override = default;
+
+  mojo::PendingRemote<mojom::CompositingObserver> BindRemote() {
+    return receiver_.BindNewPipeAndPassRemote();
+  }
+
+  // Reset on the binding thread, like Displays::Unbind.
+  void Unbind() { receiver_.reset(); }
+
+  // mojom::CompositingObserver implementation.
+  void OnCompositingChanged(bool in_memory) override {
+    queue_->Push({.type = EngineEvent::Type::kCompositing,
+                  .in_memory = in_memory});
+  }
+
+ private:
+  const raw_ptr<EngineEventQueue> queue_;
+  mojo::Receiver<mojom::CompositingObserver> receiver_{this};
+};
+
 // Converts a client's dmabuf for mojo. Duplicates the fds; the caller keeps
 // the originals.
 gfx::GpuMemoryBufferHandle ToGpuMemoryBufferHandle(
@@ -947,6 +978,11 @@ struct DomicileEngine {
         case domicile::EngineEvent::Type::kDisconnected:
           if (callbacks_.disconnected) {
             callbacks_.disconnected(callbacks_.user_data);
+          }
+          break;
+        case domicile::EngineEvent::Type::kCompositing:
+          if (callbacks_.compositing) {
+            callbacks_.compositing(callbacks_.user_data, event.in_memory);
           }
           break;
       }
@@ -1406,6 +1442,8 @@ struct DomicileEngine {
       // Observe the clipboard on connect too: a page can copy before any window
       // exists.
       broker_->ObserveClipboard(copies_.BindRemote());
+      // And how the browser composites, which decides how windows reach it.
+      broker_->ObserveCompositing(compositing_.BindRemote());
     }
     *connected = broker_.is_bound();
   }
@@ -1691,6 +1729,7 @@ struct DomicileEngine {
     probe_.reset();
     displays_.Unbind();
     copies_.Unbind();
+    compositing_.Unbind();
   }
 
   void RunOnThreadAndWait(base::OnceClosure task) {
@@ -1710,6 +1749,7 @@ struct DomicileEngine {
   // Bound on the engine's thread in ConnectOnThread.
   domicile::Displays displays_{&queue_};
   domicile::Copies copies_{&queue_};
+  domicile::Compositing compositing_{&queue_};
   base::Thread thread_;
   std::unique_ptr<mojo::core::ScopedIPCSupport> ipc_support_;
   mojo::Remote<domicile::mojom::FrameSinkBroker> broker_;
