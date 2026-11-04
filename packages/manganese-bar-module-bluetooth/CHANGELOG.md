@@ -1,5 +1,17 @@
 # @domicile-desktop/manganese-bar-module-bluetooth
 
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [fdad979]
+  - @domicile-desktop/sdk@2.1.0
+  - @domicile-desktop/component-library@2.0.1
+  - @domicile-desktop/manganese-host@2.0.1
+  - @domicile-desktop/react@0.1.1
+  - @domicile-desktop/system-bluetooth@1.1.1
+  - @domicile-desktop/manganese-bar@1.1.1
+
 ## 1.1.0
 
 ### Minor Changes

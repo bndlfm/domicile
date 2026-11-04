@@ -1,5 +1,19 @@
 # domicile
 
+## 1.1.1
+
+### Patch Changes
+
+- 8d8417d: App windows show when the engine's GPU process falls back to software, as in some VMs: the compositor sends them in memory instead of leaving them transparent.
+- c44f0f2: A desktop on a tty in VirtualBox (VMSVGA) or VMware with 3D acceleration off composites on the CPU, so app windows show instead of staying transparent.
+- Updated dependencies [93e6a4b]
+  - @domicile-desktop/manganese@1.1.1
+  - @domicile-desktop/builder@0.1.1
+  - @domicile-desktop/app-history@0.0.3
+  - @domicile-desktop/app-settings@0.1.1
+  - @domicile-desktop/shell-simple@0.0.3
+  - @domicile-desktop/shell-splash@0.0.3
+
 ## 1.1.0
 
 ### Minor Changes
