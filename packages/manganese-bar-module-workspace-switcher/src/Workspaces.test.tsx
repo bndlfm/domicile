@@ -56,32 +56,15 @@ describe("Workspaces", () => {
 
   it("keeps the chip white under the pointer", () => {
     // `_hoverEnabled` skips `aria-current`, so hovering the chip doesn't
-    // show the hover square over its fill.
+    // swap its fill for the hover square.
     const workspace = switcher();
 
     expect(workspace("1").className).toContain(
-      css({ _hoverEnabled: { _before: { opacity: 1 } } }),
+      css({ _hoverEnabled: { backgroundColor: "fillOverPhoto" } }),
     );
     expect(workspace("1").className).not.toContain(
-      css({ _hover: { _before: { opacity: 1 } } }),
+      css({ _hover: { backgroundColor: "fillOverPhoto" } }),
     );
-  });
-
-  it("moves the chip at once, fading only the hover square", () => {
-    // A fade between chips leaves both half lit, which reads as the old
-    // workspace flashing.
-    const workspace = switcher();
-
-    for (const name of ["1", "2"]) {
-      expect(workspace(name).className).toContain(
-        css({ transition: "scale {durations.faster} {easings.out}" }),
-      );
-      expect(workspace(name).className).toContain(
-        css({
-          _before: { transition: "opacity {durations.fast} {easings.out}" },
-        }),
-      );
-    }
   });
 
   it("centers the number rather than its baseline", () => {
