@@ -1,5 +1,13 @@
 # @domicile-desktop/manganese-address
 
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [fdad979]
+  - @domicile-desktop/sdk@2.1.0
+  - @domicile-desktop/component-library@2.0.1
+
 ## 1.0.1
 
 ### Patch Changes

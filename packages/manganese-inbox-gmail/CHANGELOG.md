@@ -1,5 +1,15 @@
 # @domicile-desktop/manganese-inbox-gmail
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [fdad979]
+  - @domicile-desktop/sdk@2.1.0
+  - @domicile-desktop/manganese-bar-module-gmail@2.0.1
+  - @domicile-desktop/manganese-notifications@1.1.1
+  - @domicile-desktop/react@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes
