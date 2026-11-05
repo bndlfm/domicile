@@ -2,25 +2,32 @@ import { css } from "../../styled-system/css";
 import { Hero as PageHero } from "../page/Hero";
 import { LinkButton } from "../page/LinkButton";
 
-/** The Domicile page's opening: why to use it, and where to start. */
+/** The Domicile page's opening: the idea, and where to go next. */
 export const Hero = () => (
   <PageHero
     actions={
       <>
-        <LinkButton href="#make" size="lg">
-          Make your own desktop
+        <LinkButton href="#possible" size="lg">
+          See what's possible
         </LinkButton>
-        <LinkButton href="#docs" size="lg" variant="outline">
-          Read the docs
+        <LinkButton href="#build" size="lg" variant="outline">
+          Build something weird
         </LinkButton>
       </>
     }
-    lede="If you can build a web page, you can build a desktop. Use React, CSS and anything on npm, or just describe it to your coding agent. Wayland apps still run natively."
-    tag={{
-      href: "/docs/reference/elements",
-      label: "Build your Wayland desktop with web technologies",
-    }}
-    title="The fastest way to build a Linux desktop."
+    lede={
+      <>
+        Domicile brings Chromium and Wayland together, making websites and
+        native applications part of the same desktop. Webviews become
+        first-class windows, native apps become DOM elements, and browser
+        extensions become desktop features.
+        <span className={experimentStyles}>
+          An experiment in what becomes possible when the boundaries disappear.
+        </span>
+      </>
+    }
+    tag={{ href: "#why", label: "A Linux desktop on Chromium" }}
+    title="The web doesn't have to live in a window."
   >
     {/* A window needs a Wayland session: there is no X11 backend. */}
     <p className={trialStyles}>
@@ -31,6 +38,12 @@ export const Hero = () => (
     </p>
   </PageHero>
 );
+
+const experimentStyles = css({
+  color: "foreground",
+  display: "block",
+  marginBlockStart: 3,
+});
 
 // Pulled toward the buttons it qualifies, past the hero's gap.
 const trialStyles = css({

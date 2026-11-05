@@ -18,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  description: "Build your Linux desktop with web technologies.",
+  description: "The web doesn't have to live in a window.",
   metadataBase: new URL("https://domicile-desktop.com"),
   title: { default: "Domicile", template: "%s · Domicile" },
 };
