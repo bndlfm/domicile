@@ -239,6 +239,13 @@ vkms) gives the GPU process no GL. The desktop is composited on the CPU instead.
   clients that connect later draw in memory. A client already drawing in
   dmabufs stays blank. The VM check `tty-with-an-engine-that-fell-back-to-the-cpu`
   covers it.
+- **Mesa in the GPU sandbox:** every card reaches the GPU process after its
+  sandbox is up, so `gbm_create_device` runs inside it. Desktop Linux's broker
+  allows only `/dev/dri/card*` and refuses the rest with `EACCES` (`no GBM for
+  card0 ...: EACCES`). Patch 0169 lets through, read-only, libgbm's directory
+  (its `gbm/` backend, `dri/` drivers and their libraries),
+  `/run/opengl-driver/lib`, `GBM_BACKENDS_PATH`, `LIBGL_DRIVERS_PATH`,
+  `/usr/share/drirc.d` and sysfs, plus the render nodes and readlink.
 - `--disable-gpu-process-crash-limit` stays: a GPU process relaunched after a
   crash keeps the GPU.
 - **Not covered:** no vsync provider (viz's begin frames pace painting) and
