@@ -1,0 +1,20 @@
+[package]
+name = "dioxus-shell"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+dioxus = { version = "0.7.10", default-features = false, features = ["html", "macro", "signals", "hooks", "web"] }
+futures-channel = "0.3"
+futures-util = "0.3"
+js-sys = "0.3"
+wasm-bindgen = "=0.2.127"
+web-sys = { version = "0.3", features = ["Element"] }
+
+# Its own workspace: Dioxus stays out of Domicile's Cargo.lock.
+[workspace]

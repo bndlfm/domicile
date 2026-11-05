@@ -787,6 +787,32 @@
         };
       };
 
+      # examples/dioxus-shell built: `shell.js` and the wasm it loads. Run it
+      # with `domicile <out>/shell.js`. It is its own cargo workspace, so
+      # Dioxus stays out of Domicile's Cargo.lock. wasm-bindgen-cli must match
+      # the `wasm-bindgen` version its Cargo.toml pins.
+      dioxusShellExample = pkgs.rustPlatform.buildRustPackage {
+        pname = "dioxus-shell-example";
+        version = "0.1.0";
+        src = ./examples/dioxus-shell;
+        cargoLock.lockFile = ./examples/dioxus-shell/Cargo.lock;
+        nativeBuildInputs = [ pkgs.lld pkgs.wasm-bindgen-cli_0_2_127 ];
+        buildPhase = ''
+          runHook preBuild
+          cargo build --release --offline --target wasm32-unknown-unknown
+          runHook postBuild
+        '';
+        installPhase = ''
+          runHook preInstall
+          wasm-bindgen --target web --no-typescript --out-dir $out/pkg \
+            target/wasm32-unknown-unknown/release/dioxus_shell.wasm
+          cp shell.js $out/
+          runHook postInstall
+        '';
+        doCheck = false;
+        meta.description = "The quickstart shell in Rust with Dioxus, compiled to WebAssembly";
+      };
+
       # The desktops as `nix run` apps.
       domicileApps = pkgs.lib.mapAttrs
         (name: package: {
@@ -832,6 +858,8 @@
         engine = domicileEngine;
         # The shell builder on its own, for `DOMICILE_BUILDER`.
         builder = domicileBuilder;
+        # examples/dioxus-shell, a shell written in Rust.
+        dioxus-shell-example = dioxusShellExample;
       };
 
       # The nixpkgs this flake builds with, so scripts take tools such as
@@ -893,6 +921,9 @@
           };
         in
         {
+        # The Rust example shell still builds.
+        dioxus-shell-example = dioxusShellExample;
+
         home-manager-module =
           let
             stub = homeManagerStub;

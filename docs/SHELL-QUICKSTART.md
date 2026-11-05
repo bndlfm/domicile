@@ -247,5 +247,6 @@ Then put `// @ts-check` at the top of `shell.js` and
   none, so an app that asks for a file picker or a screen share waits. Mount
   `<PortalDialogs />` to draw them all, or refuse them.
 - [Ship it](SHELL-PACKAGING.md): bundle and distribute your shell.
-- This shell is [`examples/react-shell`](/examples/react-shell) in React and
-  [`examples/vanilla-shell`](/examples/vanilla-shell) in JavaScript.
+- This shell is [`examples/react-shell`](/examples/react-shell) in React,
+  [`examples/vanilla-shell`](/examples/vanilla-shell) in JavaScript and
+  [`examples/dioxus-shell`](/examples/dioxus-shell) in Rust.

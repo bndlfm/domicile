@@ -41,9 +41,10 @@ and the binding.
 - Shell files and the document are served `Cache-Control: no-store`. Blink
   otherwise reuses non-HTTP responses across documents, and a rebuilt shell
   keeps its file names.
-- The document is served with `Content-Security-Policy: script-src 'self'`.
-  Only files under the shell root run, so markup the shell renders from
-  outside cannot run script with the desktop. See
+- The document is served with
+  `Content-Security-Policy: script-src 'self' 'wasm-unsafe-eval'`. Only files
+  under the shell root run, so markup the shell renders from outside cannot
+  run script with the desktop. Those files may compile WebAssembly. See
   [SHELL-PACKAGING.md](/docs/SHELL-PACKAGING.md#scripts).
 
 The fork writes the shell's HTML document

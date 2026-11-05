@@ -189,7 +189,8 @@ that trust from reaching anything else.
   never do. An app module's `AppDomicile` does too, for files, processes
   and D-Bus only
   ([APP-MODULES.md](architecture/APP-MODULES.md#the-host)).
-- **Content Security Policy:** `domicile://shell` serves `script-src 'self'`.
+- **Content Security Policy:** `domicile://shell` serves
+  `script-src 'self' 'wasm-unsafe-eval'`.
   A script injected through a notification body, window title or file name
   does not run ([SHELL-PACKAGING.md](SHELL-PACKAGING.md#scripts)).
 - **argv only:** no shell string. A shell that wants `sh -c` passes it.

@@ -45,7 +45,7 @@ export const Shell = mount(Desktop);
 - React ignores \`on…\` props on \`<app>\`. Put handlers on an element around it, such as a title bar.
 - \`useDomicile()\` is the desktop: \`windows.focus(appId)\`, \`windows.close(appId)\` and the rest of the typed API.
 - \`<NestedShell shell={Shell} />\` (\`@domicile-desktop/react/nested-shell\`) runs another shell, such as \`runManganese()\` from \`@domicile-desktop/manganese\`, inside this one. Draw windows and bind keys in only one of them.
-- A shell's page has \`Content-Security-Policy: script-src 'self'\`: no \`eval\`, \`new Function\` or inline scripts.
+- A shell's page has \`Content-Security-Policy: script-src 'self' 'wasm-unsafe-eval'\`: no \`eval\`, \`new Function\` or inline scripts. WebAssembly compiles, so a shell can be Rust (see examples/dioxus-shell).
 `;
 
 const sections = sectionsFor("domicile")
