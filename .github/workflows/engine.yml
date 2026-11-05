@@ -92,7 +92,8 @@ env:
   OUT_RELEASE: out/Release
 
 jobs:
-  # Skips a tree that already passed, such as the write-back push. Runs off
+  # Skips a tree that already passed, such as the write-back push, and a
+  # commit that only bumps the engine's version. Runs off
   # `crux`, so it costs no slot.
   gate:
     runs-on: ubuntu-latest
@@ -101,6 +102,9 @@ jobs:
       proved: ${{ steps.proof.outputs.proved }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # HEAD's parent, for `engine-proof.sh version-only`.
+          fetch-depth: 2
       - id: proof
         run: .github/scripts/engine-proof.sh gate
 

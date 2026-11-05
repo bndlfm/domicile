@@ -46,6 +46,12 @@ Run **Publish packages** (`publish-packages.yml`) with `release` checked:
 Every step skips what is published already, so a failed release is run again
 as it is.
 
+A release of a commit whose dry run passed reuses that run's packages and
+skips step 2 (`.github/scripts/release-dry-run.sh`), so run the dry run first.
+
+A "Version packages" merge that changes nothing in the engine but its
+`version` skips the engine build (`engine-proof.sh version-only`).
+
 ## Prereleases
 
 Check `prerelease` too to publish `stable`, whose engine is the official,

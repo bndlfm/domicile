@@ -101,6 +101,28 @@ expect "the gate hands on the key" "key=$changed" "$(grep '^key=' "$WORK/out")"
 echo x >>packages/domicile-compositor/lib.rs; commit unproved
 expect "an unproved tree is not skipped" false "$(gate push true)"
 
+# A changeset version bump changes only `version` in the engine's
+# package.json, which no build or check reads: the series is the same.
+cat >packages/domicile-engine/package.json <<'EOF2'
+{
+  "scripts": { "test:engine": "./scripts/run-checks.sh" },
+  "version": "0.1.0"
+}
+EOF2
+commit manifest
+"$PROOF" record "$(key)" >/dev/null 2>&1
+sed -i 's/"0.1.0"/"0.1.1"/' packages/domicile-engine/package.json
+echo y >>packages/domicile-compositor/lib.rs; commit version-bump
+expect "an engine version bump is skipped" true "$(gate push true)"
+expect "unless engine-release.nix does not name the series" false "$(gate push false)"
+expect "a dispatch still runs" false "$(gate workflow_dispatch true)"
+sed -i 's/run-checks/run-other-checks/' packages/domicile-engine/package.json; commit scripts
+expect "any other change to the manifest runs" false "$(gate push true)"
+sed -i 's/run-other-checks/run-checks/' packages/domicile-engine/package.json
+sed -i 's/"0.1.1"/"0.1.2"/' packages/domicile-engine/package.json
+echo pin2 >packages/domicile-engine/CHROMIUM_PIN; commit bump-and-pin
+expect "a version bump alongside an engine change runs" false "$(gate push true)"
+
 git remote set-url origin "$WORK/nowhere.git"
 "$PROOF" has "$changed" 2>/dev/null
 rc=$?
