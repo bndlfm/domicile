@@ -32,8 +32,11 @@ namespace {
 
 // Only scripts from the shell root run, so markup the shell renders from a
 // notification body, window title or file name cannot run with the desktop.
+// WebAssembly may compile: only a script from the shell root can ask for it,
+// so shells written in Rust and other wasm languages run.
 // Styles stay open: shells inline their CSS. See docs/SHELL-PACKAGING.md.
-constexpr char kShellContentSecurityPolicy[] = "script-src 'self'";
+constexpr char kShellContentSecurityPolicy[] =
+    "script-src 'self' 'wasm-unsafe-eval'";
 
 // A shell is loaded by a navigation, not a cache-bypassing reload, and Blink
 // keeps non-HTTP responses in its memory cache without limit. A rebuilt shell

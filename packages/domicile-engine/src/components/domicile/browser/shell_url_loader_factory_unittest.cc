@@ -218,7 +218,7 @@ TEST(ShellDocumentTest, RunsScriptOnlyFromTheShellRoot) {
   ASSERT_TRUE(head->headers);
   EXPECT_EQ(head->headers->GetNormalizedHeader("Content-Security-Policy")
                 .value_or(""),
-            "script-src 'self'");
+            "script-src 'self' 'wasm-unsafe-eval'");
 }
 
 TEST(ShellDocumentTest, CrossfadesFromTheShellBefore) {

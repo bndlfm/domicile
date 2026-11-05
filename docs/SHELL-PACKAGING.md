@@ -199,9 +199,12 @@ Other rules:
 ## Scripts
 
 Domicile serves its document with `Content-Security-Policy: script-src
-'self'`, so only files under the module's directory run. Markup from outside
-(a notification body, window title or file name put in `innerHTML`) cannot
-run script with the desktop.
+'self' 'wasm-unsafe-eval'`, so only files under the module's directory run.
+Markup from outside (a notification body, window title or file name put in
+`innerHTML`) cannot run script with the desktop.
+
+Those files may compile WebAssembly, so a shell can be written in Rust or any
+language that targets wasm. See [`examples/dioxus-shell`](/examples/dioxus-shell).
 
 Refused:
 
@@ -209,7 +212,6 @@ Refused:
 - `javascript:` URLs
 - `eval`, `new Function` and string `setTimeout`
 - `blob:` and `data:` scripts and workers
-- WebAssembly
 
 Vite's build emits none of these. A library that probes for `eval` and falls
 back, such as Zod, logs one violation to the console. Styles are not
