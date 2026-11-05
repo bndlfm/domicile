@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: domicile CI <ci@domicile.invalid>
+Date: Thu, 5 Nov 2026 00:00:00 +0000
+Subject: [PATCH] domicile: a VMware card with 3D draws on the GPU
+
+Entry 176 of the software rendering list ("VMware is buggy on Linux",
+crbug 1327939) turned off the GPU on every VMware card, vendor 0x15ad.
+Domicile is the whole desktop, so that put every window on the CPU in a
+VMware guest with 3D on, where GNOME draws on the same card through
+Mesa's SVGA3D driver. A reporter's VMware guest ran Domicile on the GPU
+with the list ignored.
+
+The entry is gone. Entry 50 still turns off VMware renderers older than
+Mesa 9.2.1, and a VMware guest with 3D off has no GL to draw with.
+
+Verified: not built. This repository cannot build Chromium; the engine
+job builds it on `crux`.
+---
+ gpu/config/software_rendering_list.json | 12 ------------
+ 1 file changed, 12 deletions(-)
+
+diff --git a/gpu/config/software_rendering_list.json b/gpu/config/software_rendering_list.json
+index 4361199..5c90f0a 100644
+--- a/gpu/config/software_rendering_list.json
++++ b/gpu/config/software_rendering_list.json
+@@ -1347,18 +1347,6 @@
+         "accelerated_video_encode"
+       ]
+     },
+-    {
+-      "id": 176,
+-      "description": "VMware is buggy on Linux",
+-      "cr_bugs": [1327939],
+-      "os": {
+-        "type": "linux"
+-      },
+-      "vendor_id": "0x15ad",
+-      "features": [
+-        "all"
+-      ]
+-    },
+     {
+       "id": 178,
+       "description": "Intel IronLake only shows black in hardware decoded H264 [b/202962575, b/233244020]",
