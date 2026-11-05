@@ -113,6 +113,10 @@ scoped_refptr<PlatformCursor> DrmCursorFactory::GetTurnedDefaultCursor(
                                     cursor->second.frame_delay);
 }
 
+bool DrmCursorFactory::ShowsCursorsUnturned() const {
+  return true;
+}
+
 void DrmCursorFactory::ObserveThemeChanges() {}
 
 void DrmCursorFactory::OnDeskCursorThemeChanged() {

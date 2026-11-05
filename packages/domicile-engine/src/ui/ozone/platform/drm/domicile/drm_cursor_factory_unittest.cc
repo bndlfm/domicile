@@ -83,6 +83,15 @@ TEST(DrmCursorFactoryTest, AnImageCursorIsStillMade) {
   EXPECT_FALSE(BitmapCursor::FromPlatformCursor(image)->bitmaps().empty());
 }
 
+TEST(DrmCursorFactoryTest, APageCursorIsTurnedBeforeItGetsHere) {
+  DrmCursorFactory concrete;
+  const CursorFactory& factory = concrete;
+
+  // A CRTC shows the cursor plane as it is given. A page's cursor image must
+  // be turned for a rotated panel first, as the themed ones are.
+  EXPECT_TRUE(factory.ShowsCursorsUnturned());
+}
+
 SkBitmap Square(int size, SkColor color) {
   SkBitmap bitmap;
   bitmap.allocN32Pixels(size, size);

@@ -75,6 +75,10 @@ class DrmCursorFactory : public BitmapCursorFactory,
       float scale,
       CursorTurn turn) override;
 
+  // True: a CRTC shows the cursor as it is given, so a page's cursor image is
+  // turned for a rotated panel before it gets here.
+  bool ShowsCursorsUnturned() const override;
+
   // No-op: the theme comes from the desk's config, not a toolkit. The base's
   // `NOTIMPLEMENTED()` would log an error on every start.
   void ObserveThemeChanges() override;
