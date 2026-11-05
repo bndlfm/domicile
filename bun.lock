@@ -190,7 +190,7 @@
     },
     "packages/domicile-engine": {
       "name": "@domicile-desktop/engine",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "devDependencies": {
         "@domicile-desktop/check-runner": "workspace:*",
       },
