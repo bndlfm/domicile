@@ -1,0 +1,154 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: domicile CI <ci@domicile.invalid>
+Date: Thu, 5 Nov 2026 00:00:00 +0000
+Subject: [PATCH] domicile: a page's cursor turns with a rotated monitor
+
+A page's own cursor image (CSS `cursor: url(...)`, such as the hand over
+a Google map) showed on its side on a rotated monitor. wm::CursorLoader
+turns the themed cursors for the panel (patch 0125), but a page's image
+goes through content::WebCursor, which turns it only on ChromeOS.
+
+- CursorFactory::ShowsCursorsUnturned: true on the DRM platform, where
+  a CRTC shows the cursor as it is given. False elsewhere: the host
+  turns the cursor.
+- There, WebCursor turns the image by the panel of the cursor client's
+  display, as the loader turns the themed ones. That display follows the
+  pointer across monitors.
+- RenderWidgetHostViewAura rebuilds a page's image when that display
+  changes, so it turns as the pointer crosses onto a monitor turned
+  another way.
+
+Verified: not built. This repository cannot build Chromium; the engine
+job builds it on `crux`. DrmCursorFactory's answer has its unit test in
+ozone_unittests.
+---
+ .../render_widget_host_view_aura.cc              | 11 +++++++++++
+ .../renderer_host/render_widget_host_view_aura.h |  3 +++
+ content/common/BUILD.gn                          |  5 ++++-
+ content/common/cursors/webcursor_aura.cc         | 16 +++++++++++++++-
+ ui/base/cursor/cursor_factory.cc                 |  4 ++++
+ ui/base/cursor/cursor_factory.h                  |  6 ++++++
+ 6 files changed, 43 insertions(+), 2 deletions(-)
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index 979aa65..caf30a7 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -2954,6 +2954,17 @@ void RenderWidgetHostViewAura::OnSystemCursorSizeChanged(
+   UpdateSystemCursorSize(system_cursor_size);
+ }
+ 
++void RenderWidgetHostViewAura::OnCursorDisplayChanged(
++    const display::Display& display) {
++  // DOMICILE: the pointer crossed onto another monitor. A page's cursor image
++  // is turned for that monitor's panel (WebCursor::UpdateDisplayInfoForWindow).
++  if (current_cursor_.cursor().type() != ui::mojom::CursorType::kCustom) {
++    return;
++  }
++  current_cursor_.UpdateDisplayInfoForWindow(window_);
++  UpdateCursorIfOverSelf();
++}
++
+ ////////////////////////////////////////////////////////////////////////////////
+ // RenderWidgetHostViewAura, aura::client::FocusChangeObserver implementation:
+ 
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.h b/content/browser/renderer_host/render_widget_host_view_aura.h
+index 0ccc352..ada8eaa 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.h
++++ b/content/browser/renderer_host/render_widget_host_view_aura.h
+@@ -396,6 +396,9 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
+   // Overridden from aura::client::CursorClientObserver:
+   void OnSystemCursorSizeChanged(const gfx::Size& cursor_size) override;
+ 
++  // Overridden from aura::client::CursorClientObserver:
++  void OnCursorDisplayChanged(const display::Display& display) override;
++
+   // Overridden from aura::client::FocusChangeObserver:
+   void OnWindowFocused(aura::Window* gained_focus,
+                        aura::Window* lost_focus) override;
+diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
+index 3339832..29ef5ee 100644
+--- a/content/common/BUILD.gn
++++ b/content/common/BUILD.gn
+@@ -364,7 +364,10 @@ source_set("common") {
+   }
+ 
+   if (use_aura) {
+-    deps += [ "//ui/wm" ]
++    deps += [
++      "//ui/aura",
++      "//ui/wm",
++    ]
+   } else {
+     sources -= [ "cursors/webcursor_aura.cc" ]
+   }
+diff --git a/content/common/cursors/webcursor_aura.cc b/content/common/cursors/webcursor_aura.cc
+index 74957e2..e63189f 100644
+--- a/content/common/cursors/webcursor_aura.cc
++++ b/content/common/cursors/webcursor_aura.cc
+@@ -5,6 +5,8 @@
+ #include "base/check_op.h"
+ #include "build/build_config.h"
+ #include "content/common/cursors/webcursor.h"
++#include "ui/aura/client/cursor_client.h"
++#include "ui/aura/window.h"
+ #include "ui/base/cursor/cursor.h"
+ #include "ui/base/cursor/cursor_factory.h"
+ #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
+@@ -47,11 +49,23 @@ void WebCursor::UpdateDisplayInfoForWindow(aura::Window* window) {
+   float preferred_scale =
+       display::Screen::Get()->GetPreferredScaleFactorForWindow(window).value_or(
+           1.0f);
+-  if (device_scale_factor_ == preferred_scale) {
++  // DOMICILE: on a tty nothing turns a page's cursor image for a rotated
++  // panel. Turn it as wm::CursorLoader turns the themed cursors: by the
++  // display of the cursor client, which follows the pointer across monitors.
++  display::Display::Rotation rotation = display::Display::ROTATE_0;
++  aura::Window* root = window ? window->GetRootWindow() : nullptr;
++  aura::client::CursorClient* cursor_client =
++      root ? aura::client::GetCursorClient(root) : nullptr;
++  if (cursor_client &&
++      ui::CursorFactory::GetInstance()->ShowsCursorsUnturned()) {
++    rotation = cursor_client->GetDisplay().panel_rotation();
++  }
++  if (device_scale_factor_ == preferred_scale && rotation_ == rotation) {
+     return;
+   }
+ 
+   device_scale_factor_ = preferred_scale;
++  rotation_ = rotation;
+   custom_cursor_.reset();
+ }
+ 
+diff --git a/ui/base/cursor/cursor_factory.cc b/ui/base/cursor/cursor_factory.cc
+index 4dfc308..eefb3b4 100644
+--- a/ui/base/cursor/cursor_factory.cc
++++ b/ui/base/cursor/cursor_factory.cc
+@@ -77,6 +77,10 @@ scoped_refptr<PlatformCursor> CursorFactory::GetTurnedDefaultCursor(
+   return GetDefaultCursor(type, scale);
+ }
+ 
++bool CursorFactory::ShowsCursorsUnturned() const {
++  return false;
++}
++
+ scoped_refptr<PlatformCursor> CursorFactory::CreateImageCursor(
+     mojom::CursorType type,
+     const SkBitmap& bitmap,
+diff --git a/ui/base/cursor/cursor_factory.h b/ui/base/cursor/cursor_factory.h
+index 55deef3..878bc6f 100644
+--- a/ui/base/cursor/cursor_factory.h
++++ b/ui/base/cursor/cursor_factory.h
+@@ -77,6 +77,12 @@ class COMPONENT_EXPORT(UI_BASE_CURSOR) CursorFactory {
+       float scale,
+       CursorTurn turn);
+ 
++  // Domicile: whether this backend shows a cursor on a rotated panel as it is
++  // given, so a page's cursor image must be turned before it gets here, as
++  // `GetTurnedDefaultCursor` turns the default ones. The base says no:
++  // elsewhere the host turns the cursor.
++  virtual bool ShowsCursorsUnturned() const;
++
+   // Return the {bitmaps, hotspot} for the default cursor of the specified
+   // `type`. If that cursor is not available or the extraction of the data
+   // fails, return `std::nullopt`.

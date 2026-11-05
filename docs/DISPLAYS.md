@@ -180,6 +180,7 @@ window so each can rotate and scale on its own.
 | `DesktopWindowTreeHostPlatform` (patch `0043`) | With `turns_windows_with_their_display` (DRM only), applies a root transform and passes a display transform hint, so viz rotates the frame on output. Screen rectangles stay in pixels (patch `0045`) |
 | `CursorController` | Built off ChromeOS so `DrmCursor::MoveCursor` rotates pointer motion. `DrmWindowHost` updates it |
 | `wm::CursorLoader` | Rotates and scales the cursor image, the desk's theme (patch `0125`) as well as Chromium's art |
+| `content::WebCursor` (patch `0171`) | Rotates a page's own cursor image (CSS `cursor: url(...)`) by the pointer's monitor, where `CursorFactory::ShowsCursorsUnturned` (DRM only) |
 
 - A window is the monitor's logical box, upright. A 4K panel rotated at scale
   1.2 is a window of 1800×3200 DIPs.

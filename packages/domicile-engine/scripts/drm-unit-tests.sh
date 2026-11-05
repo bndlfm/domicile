@@ -43,7 +43,7 @@ SUITES=(
   DrmFullscreenTest:4
   DrmInputDevicesTest:27
   DrmInputControllerTest:2
-  DrmCursorFactoryTest:4
+  DrmCursorFactoryTest:5
   DrmCursorFactoryThemeTest:4
   DrmClipboardTest:12
   DrmEdidSerialTest:18
