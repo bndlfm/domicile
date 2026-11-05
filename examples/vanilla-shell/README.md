@@ -8,7 +8,7 @@ JavaScript:
 - Meta+Enter opens `kitty`.
 
 `shell.js` is the whole shell. [`react-shell`](/examples/react-shell) is the
-same shell in React.
+same shell in React, and [`dioxus-shell`](/examples/dioxus-shell) in Rust.
 
 ```sh
 domicile ./shell.js
