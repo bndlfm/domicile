@@ -246,6 +246,9 @@ vkms) gives the GPU process no GL. The desktop is composited on the CPU instead.
   (its `gbm/` backend, `dri/` drivers and their libraries),
   `/run/opengl-driver/lib`, `GBM_BACKENDS_PATH`, `LIBGL_DRIVERS_PATH`,
   `/usr/share/drirc.d` and sysfs, plus the render nodes and readlink.
+- **VMware:** patch 0170 drops the GPU blocklist's "VMware is buggy on Linux"
+  entry, which put every VMware guest on the CPU. A guest with 3D on draws on
+  the GPU, as GNOME does there.
 - `--disable-gpu-process-crash-limit` stays: a GPU process relaunched after a
   crash keeps the GPU.
 - **Not covered:** no vsync provider (viz's begin frames pace painting) and
