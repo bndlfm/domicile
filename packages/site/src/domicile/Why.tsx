@@ -1,9 +1,15 @@
+import { BrowsersIcon } from "@phosphor-icons/react/dist/ssr/Browsers";
+import { MonitorIcon } from "@phosphor-icons/react/dist/ssr/Monitor";
+import { StackIcon } from "@phosphor-icons/react/dist/ssr/Stack";
+import type { ReactNode } from "react";
+
 import { css, cva } from "../../styled-system/css";
 import { flex, grid } from "../../styled-system/patterns";
 import { repoFile } from "../page/repo";
 import { Section } from "../page/Section";
 
 type Stage = {
+  icon: ReactNode;
   /** What draws or arranges at this stage. */
   title: string;
   body: string;
@@ -11,39 +17,62 @@ type Stage = {
   tone?: "engine" | undefined;
 };
 
+type Source = {
+  label: string;
+  /** How the source appears on the page, if it does. */
+  code?: string | undefined;
+};
+
+/** One input and the stages it passes through on its own. */
+type Lane = { source: Source; stages?: readonly Stage[] | undefined };
+
 type Diagram = {
   title: string;
-  /** What feeds the first stage, side by side. */
-  sources: readonly string[];
+  /** What feeds the first shared stage, side by side. */
+  lanes: readonly Lane[];
+  /** The stages every lane passes through, top to bottom. */
   stages: readonly Stage[];
 };
 
 const CONVENTIONAL: Diagram = {
-  sources: ["Websites, in a browser", "Native apps"],
+  lanes: [
+    {
+      source: { label: "Websites" },
+      stages: [
+        {
+          body: "Renders and composites its pages into one window, with its own engine.",
+          icon: <BrowsersIcon />,
+          title: "The browser",
+        },
+      ],
+    },
+    { source: { label: "Native apps" } },
+  ],
   stages: [
     {
-      body: "The browser renders and composites its pages into one window, with its own engine. Each native app draws its own window.",
-      title: "Each app draws a window",
-      tone: "engine",
-    },
-    {
       body: "Arranges every window, the browser's included, and composites them.",
+      icon: <StackIcon />,
       title: "The desktop compositor",
     },
-    { body: "", title: "The screen" },
+    { body: "", icon: <MonitorIcon />, title: "The screen" },
   ],
   title: "A typical desktop",
 };
 
 const DOMICILE: Diagram = {
-  sources: ["Websites: <webview>", "Native apps: <app>", "Your desktop: HTML"],
+  lanes: [
+    { source: { code: "<webview>", label: "Websites" } },
+    { source: { code: "<app>", label: "Native apps" } },
+    { source: { code: "HTML", label: "Your desktop" } },
+  ],
   stages: [
     {
       body: "Apps still draw their own windows, and Domicile's Wayland server hands them to the engine. The engine lays out the page, the websites and the windows with CSS, and composites them in one frame.",
-      title: "One page, in Chromium",
+      icon: <BrowsersIcon />,
+      title: "Domicile",
       tone: "engine",
     },
-    { body: "", title: "The screen" },
+    { body: "", icon: <MonitorIcon />, title: "The screen" },
   ],
   title: "Domicile",
 };
@@ -81,36 +110,62 @@ export const Why = () => (
   </Section>
 );
 
-/** One arrangement: its sources over its stages, top to bottom. */
+/** One arrangement, top to bottom: its lanes side by side, each ending in an
+ * arrow, then the stages they share. The lanes' arrows stretch, so every lane
+ * ends level. */
 const Flow = ({ diagram }: { diagram: Diagram }) => (
   <figure className={flowStyles}>
     <figcaption className={flowTitleStyles}>{diagram.title}</figcaption>
-    <ul className={sourcesStyles}>
-      {diagram.sources.map((source) => (
-        <li className={sourceStyles} key={source}>
-          {source}
-        </li>
-      ))}
-    </ul>
-    <ol className={stagesStyles}>
-      {diagram.stages.map((stage) => (
-        <li className={stageWrapStyles} key={stage.title}>
-          <span aria-hidden="true" className={arrowStyles}>
-            ↓
-          </span>
-          <div className={stageStyles({ tone: stage.tone ?? "plain" })}>
-            <span className={stageTitleStyles}>{stage.title}</span>
-            {stage.body === "" ? undefined : (
-              <span className={stageBodyStyles}>{stage.body}</span>
-            )}
-          </div>
-        </li>
-      ))}
-    </ol>
+    <div className={pathStyles}>
+      <ul className={lanesStyles}>
+        {diagram.lanes.map((lane) => (
+          <li className={laneStyles} key={lane.source.label}>
+            <span className={sourceStyles}>
+              <span>{lane.source.label}</span>
+              {lane.source.code === undefined ? undefined : (
+                <code className={sourceCodeStyles}>{lane.source.code}</code>
+              )}
+            </span>
+            {(lane.stages ?? []).map((stage) => (
+              <span className={laneStageStyles} key={stage.title}>
+                <Connector />
+                <StageBox stage={stage} />
+              </span>
+            ))}
+            <Connector />
+          </li>
+        ))}
+      </ul>
+      <ol className={stagesStyles}>
+        {diagram.stages.map((stage, index) => (
+          <li className={stageWrapStyles} key={stage.title}>
+            {index === 0 ? undefined : <Connector />}
+            <StageBox stage={stage} />
+          </li>
+        ))}
+      </ol>
+    </div>
   </figure>
 );
 
+const Connector = () => <span aria-hidden="true" className={connectorStyles} />;
+
+const StageBox = ({ stage }: { stage: Stage }) => (
+  <div className={stageStyles({ tone: stage.tone ?? "plain" })}>
+    <span aria-hidden="true" className={stageIconStyles}>
+      {stage.icon}
+    </span>
+    <div className={stageTextStyles}>
+      <span className={stageTitleStyles}>{stage.title}</span>
+      {stage.body === "" ? undefined : (
+        <span className={stageBodyStyles}>{stage.body}</span>
+      )}
+    </div>
+  </div>
+);
+
 const diagramsStyles = grid({
+  alignItems: "start",
   gap: 5,
   gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 26rem), 1fr))",
 });
@@ -120,7 +175,7 @@ const flowStyles = flex({
   border: "1px solid {colors.border}",
   borderRadius: "2xl",
   direction: "column",
-  gap: 3,
+  gap: 4,
   padding: { base: 5, md: 7 },
 });
 
@@ -130,47 +185,100 @@ const flowTitleStyles = css({
   fontWeight: "bold",
 });
 
-const sourcesStyles = flex({ gap: 2, listStyle: "none", wrap: "wrap" });
+// The lanes' arrows run straight into the stage below them.
+const pathStyles = flex({ direction: "column" });
 
-const sourceStyles = css({
-  border: "1px dashed {colors.border}",
+const lanesStyles = grid({
+  gap: 2,
+  gridAutoColumns: "minmax(0, 1fr)",
+  gridAutoFlow: "column",
+  listStyle: "none",
+});
+
+const laneStyles = flex({ direction: "column" });
+
+const laneStageStyles = flex({ direction: "column" });
+
+const sourceStyles = flex({
+  align: "center",
+  backgroundColor: "background",
+  border: "1px solid {colors.border}",
   borderRadius: "lg",
-  flex: "1 1 8rem",
-  fontFamily: "mono",
+  direction: "column",
   fontSize: "sm",
-  paddingBlock: 2,
+  fontWeight: "medium",
+  gap: 0.5,
+  justify: "center",
+  paddingBlock: 2.5,
   paddingInline: 3,
   textAlign: "center",
 });
 
-const stagesStyles = flex({ direction: "column", gap: 0, listStyle: "none" });
+const sourceCodeStyles = css({
+  color: "accent",
+  fontFamily: "mono",
+  fontSize: "xs",
+});
 
-const stageWrapStyles = flex({ align: "center", direction: "column" });
+const stagesStyles = flex({ direction: "column", listStyle: "none" });
 
-const arrowStyles = css({ color: "muted", fontSize: "lg", lineHeight: "1.6" });
+const stageWrapStyles = flex({ direction: "column" });
+
+// A line down to the stage, ending in an arrowhead.
+const connectorStyles = css({
+  _after: {
+    borderInline: "5px solid transparent",
+    borderTop: "6px solid {colors.border}",
+    content: '""',
+    insetBlockEnd: "-1px",
+    insetInlineStart: "50%",
+    position: "absolute",
+    translate: "-50% 0",
+  },
+  alignSelf: "center",
+  backgroundColor: "border",
+  blockSize: 6,
+  flex: 1,
+  inlineSize: "1px",
+  marginBlockEnd: 1,
+  minBlockSize: 6,
+  position: "relative",
+});
 
 const stageStyles = cva({
   base: {
-    borderRadius: "lg",
+    alignItems: "flex-start",
+    borderRadius: "xl",
     display: "flex",
-    flexDirection: "column",
-    gap: 1,
-    inlineSize: "100%",
-    paddingBlock: 3,
+    gap: 3,
+    paddingBlock: 3.5,
     paddingInline: 4,
   },
   variants: {
     tone: {
       engine: {
-        backgroundColor:
-          "color-mix(in oklab, {colors.accent} 14%, {colors.card})",
+        backgroundImage:
+          "linear-gradient(135deg, color-mix(in oklab, {colors.accent} 18%, {colors.card}), color-mix(in oklab, {colors.accent} 6%, {colors.card}))",
         border:
           "1px solid color-mix(in oklab, {colors.accent} 45%, {colors.border})",
       },
-      plain: { border: "1px solid {colors.border}" },
+      plain: {
+        backgroundColor: "background",
+        border: "1px solid {colors.border}",
+      },
     },
   },
 });
+
+const stageIconStyles = css({
+  color: "accent",
+  flex: "none",
+  fontSize: "xl",
+  lineHeight: "1",
+  marginBlockStart: "0.1em",
+});
+
+const stageTextStyles = flex({ direction: "column", gap: 1 });
 
 const stageTitleStyles = css({ fontWeight: "semibold" });
 

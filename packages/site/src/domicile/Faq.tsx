@@ -15,10 +15,10 @@ const QUESTIONS: readonly {
 }[] = [
   {
     answer:
-      "Not necessarily, and that isn't the goal. An app still draws its own window; the engine imports it and composites it in the same frame as the page. On the build machine, a keystroke reaches a composited frame in about 1.7 display frames. Nothing yet measures a lit monitor.",
+      "The goal is for Domicile to feel no slower than any other Wayland compositor, not to be the fastest or lightest one. Running Chromium has a natural overhead, but in most ways it's the same overhead as running Chromium inside another compositor.",
     link: {
       href: repoFile("docs/architecture/ENGINE-FORK-MEASUREMENTS.md"),
-      label: "Measurements",
+      label: "See the measurements",
     },
     question: "Is it faster than my current desktop?",
   },
@@ -30,7 +30,7 @@ const QUESTIONS: readonly {
   },
   {
     answer:
-      "Yes, with extensive help from Claude, Anthropic's AI model. Claude wrote most of the code, tests and docs. The architecture, direction and technical decisions come from the project's human maintainer. Changes are checked by the test suite and by daily use, not by line-by-line human review. The source and its full history are public.",
+      "Yes, with extensive help from Claude, which wrote most of the code, tests and docs. The architecture, direction and technical decisions come from the project's human maintainer. Changes are checked by the test suite and by daily use, not by line-by-line human review. The source and its full history are public.",
     link: { href: REPO, label: "Source" },
     question: "Was Domicile built with AI?",
   },
@@ -45,6 +45,12 @@ const QUESTIONS: readonly {
       "Anything you can. It runs as you, with your files, programs and D-Bus. Install shells and apps you trust, as you would any program.",
     link: { href: "/docs/apps/build", label: "Build an app" },
     question: "What can a shell or an app do?",
+  },
+  {
+    answer:
+      "No. A shell can be Rust, or any language that compiles to WebAssembly. The Dioxus example is the quickstart shell in Rust, with a 3-line JavaScript file that loads it.",
+    link: { href: "/docs/shells/writing#in-rust", label: "Shells in Rust" },
+    question: "Do I have to write my shell in JavaScript?",
   },
   {
     answer:
