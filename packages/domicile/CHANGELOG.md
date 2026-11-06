@@ -1,5 +1,29 @@
 # domicile
 
+## 1.2.0
+
+### Minor Changes
+
+- 8eaae53: Configure touchpad tapping, clicking, scrolling and typing suppression, and mouse acceleration and scrolling, through the desktop config. Choose native libinput typing suppression or configurable pauses. Apply settings on reload and device reconnection.
+- a354497: A site or proxy that asks for a username and password now asks in the shell, over the page, instead of in Chrome's unstyled dialog drawn over the desktop. `<webview>` fires `domicile-sign-in`.
+- 18413ff: A link for an app, such as Zoom or Slack, asks "Open Zoom?" over its page in the shell's style, naming the app and showing its icon, instead of Chrome's unstyled "Open xdg-open?" dialog. A secure site can be let open these links without asking. Shells get `domicile-external-app` on `<webview>`.
+
+### Patch Changes
+
+- d69b2f4: A page's notification names its browser window, so only the Gmail inbox's own window has its duplicate notifications cleared; Gmail in another window notifies again.
+- e8696d9: `domicile load-shell` goes back to the shell you had when the new one fails to run, and prints why.
+- 4b5b6f7: On a tty, a website's own pointer image (such as the hand over a Google map) turns with a rotated monitor instead of showing on its side.
+- 7e3f354: Shells can use WebAssembly, so a shell can be written in Rust or another language that compiles to wasm. `examples/dioxus-shell` is one, in Dioxus.
+- Updated dependencies [b3e7457]
+- Updated dependencies [bc45b4c]
+- Updated dependencies [d69b2f4]
+  - @domicile-desktop/manganese@1.1.2
+  - @domicile-desktop/app-history@0.0.4
+  - @domicile-desktop/app-settings@0.1.2
+  - @domicile-desktop/shell-simple@0.0.4
+  - @domicile-desktop/shell-splash@0.0.4
+  - @domicile-desktop/builder@0.1.2
+
 ## 1.1.2
 
 ### Patch Changes

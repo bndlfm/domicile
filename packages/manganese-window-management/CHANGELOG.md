@@ -1,5 +1,33 @@
 # @domicile-desktop/manganese-window-management
 
+## 1.3.0
+
+### Minor Changes
+
+- 28e836c: Tab groups nest. A selected group moved with Meta+Shift+arrow goes into the next group as a tab, along its tabs, then out past the last one. The new `group` command (Meta+G) turns the focused tab into a group of its own in the same slot.
+- a354497: A site or proxy that asks for a username and password now asks in the shell, over the page, instead of in Chrome's unstyled dialog drawn over the desktop. `<webview>` fires `domicile-sign-in`.
+- 18413ff: A link for an app, such as Zoom or Slack, asks "Open Zoom?" over its page in the shell's style, naming the app and showing its icon, instead of Chrome's unstyled "Open xdg-open?" dialog. A secure site can be let open these links without asking. Shells get `domicile-external-app` on `<webview>`.
+
+### Patch Changes
+
+- f4f993a: A closing window stays under the floating windows over it, instead of flashing above them.
+- b3e7457: Drag a nested group's tab along its strip or out of it, and move other tabs past it. The tab strip above a nested group no longer turns into a resize handle.
+- f6dc5b2: Resizing a window by its edge always ends when the mouse button is let go, so the resize cursor no longer sticks and windows take clicks again.
+- cd7e4ba: Hovering a tab group's rail focuses the group's open window.
+- 280ce42: A window moving to another tab group slides over the tab strips on its way, not under them.
+- Updated dependencies [8eaae53]
+- Updated dependencies [d69b2f4]
+- Updated dependencies [3d22f74]
+- Updated dependencies [a354497]
+- Updated dependencies [18413ff]
+  - @domicile-desktop/sdk@2.2.0
+  - @domicile-desktop/component-library@2.0.2
+  - @domicile-desktop/manganese-page-requests@1.2.0
+  - @domicile-desktop/system-apps@1.2.0
+  - @domicile-desktop/manganese-address@1.0.3
+  - @domicile-desktop/manganese-host@2.0.2
+  - @domicile-desktop/manganese-bar@1.1.2
+
 ## 1.2.0
 
 ### Minor Changes

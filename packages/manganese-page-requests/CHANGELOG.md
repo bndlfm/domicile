@@ -1,5 +1,23 @@
 # @domicile-desktop/manganese-page-requests
 
+## 1.2.0
+
+### Minor Changes
+
+- a354497: A site or proxy that asks for a username and password now asks in the shell, over the page, instead of in Chrome's unstyled dialog drawn over the desktop. `<webview>` fires `domicile-sign-in`.
+- 18413ff: A link for an app, such as Zoom or Slack, asks "Open Zoom?" over its page in the shell's style, naming the app and showing its icon, instead of Chrome's unstyled "Open xdg-open?" dialog. A secure site can be let open these links without asking. Shells get `domicile-external-app` on `<webview>`.
+
+### Patch Changes
+
+- Updated dependencies [8eaae53]
+- Updated dependencies [d69b2f4]
+- Updated dependencies [3d22f74]
+- Updated dependencies [a354497]
+- Updated dependencies [18413ff]
+  - @domicile-desktop/sdk@2.2.0
+  - @domicile-desktop/component-library@2.0.2
+  - @domicile-desktop/system-apps@1.2.0
+
 ## 1.1.1
 
 ### Patch Changes

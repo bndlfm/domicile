@@ -1,5 +1,17 @@
 # @domicile-desktop/component-library
 
+## 2.0.2
+
+### Patch Changes
+
+- 3d22f74: A closing popover no longer closes the one opened in its place, so clicking another extension's action opens its popup.
+- Updated dependencies [8eaae53]
+- Updated dependencies [d69b2f4]
+- Updated dependencies [a354497]
+- Updated dependencies [18413ff]
+  - @domicile-desktop/sdk@2.2.0
+  - @domicile-desktop/system-apps@1.2.0
+
 ## 2.0.1
 
 ### Patch Changes

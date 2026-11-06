@@ -1,5 +1,16 @@
 # @domicile-desktop/manganese-bar-module-notifications
 
+## 1.1.2
+
+### Patch Changes
+
+- Updated dependencies [bc45b4c]
+- Updated dependencies [d69b2f4]
+- Updated dependencies [3d22f74]
+  - @domicile-desktop/manganese-notifications@1.1.2
+  - @domicile-desktop/component-library@2.0.2
+  - @domicile-desktop/manganese-bar@1.1.2
+
 ## 1.1.1
 
 ### Patch Changes

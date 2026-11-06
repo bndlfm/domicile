@@ -1,5 +1,16 @@
 # @domicile-desktop/system-bluetooth
 
+## 1.1.2
+
+### Patch Changes
+
+- Updated dependencies [8eaae53]
+- Updated dependencies [d69b2f4]
+- Updated dependencies [a354497]
+- Updated dependencies [18413ff]
+  - @domicile-desktop/sdk@2.2.0
+  - @domicile-desktop/react@0.1.2
+
 ## 1.1.1
 
 ### Patch Changes
