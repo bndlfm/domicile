@@ -5,6 +5,7 @@ import {
   WEBVIEW_CONTEXT_MENU_EVENT,
   WEBVIEW_DEVICE_REQUEST_EVENT,
   WEBVIEW_DIALOG_EVENT,
+  WEBVIEW_EXTERNAL_APP_EVENT,
   WEBVIEW_FILE_CHOOSER_EVENT,
   WEBVIEW_FIND_CHANGE_EVENT,
   WEBVIEW_FOCUS_REQUEST_EVENT,
@@ -21,6 +22,7 @@ import {
   WEBVIEW_ZOOM_CHANGE_EVENT,
   WEBVIEW_ZOOM_OUT_REQUEST_EVENT,
 } from "@domicile-desktop/sdk/webview-element";
+import { fakeDesktop } from "@domicile-desktop/system-apps/fake-desktop";
 import { loadEmittedStylesheet } from "@domicile-desktop/test-support/emitted-stylesheet";
 import {
   act,
@@ -2019,6 +2021,80 @@ describe("BrowserWindow", () => {
       await userEvent.click(screen.getByRole("button", { name: "Connect" }));
 
       expect(answers).toStrictEqual(["choose 1"]);
+    });
+  });
+
+  // The engine draws no dialog for a link for an application.
+  describe("a link for an application its page opens", () => {
+    it("asks over the page, naming the application, and opens it", async () => {
+      const answers: string[] = [];
+      const apps = fakeDesktop(
+        {
+          "/apps/applications/zoom.desktop":
+            "[Desktop Entry]\nType=Application\nName=Zoom\nExec=zoom %u\n",
+        },
+        (argv) =>
+          argv[0] === "env"
+            ? { code: 0, stderr: "", stdout: "XDG_DATA_DIRS=/apps\0" }
+            : { code: 0, stderr: "", stdout: "zoom.desktop\n" },
+      );
+      const { container } = render(
+        <BrowserWindow
+          behindPanel={false}
+          clickThrough={false}
+          covered={false}
+          depth={0}
+          domicile={{
+            ...silentDomicile,
+            dbus: apps.dbus,
+            files: { ...silentDomicile.files, ...apps.files },
+            processes: { ...silentDomicile.processes, ...apps.processes },
+          }}
+          dragging={false}
+          focused
+          frame={FRAME}
+          fullscreen={false}
+          isApp
+          motion="resting"
+          onDescription={noDescription}
+          onFocusRequest={() => undefined}
+          onIcon={noIcon}
+          onMotionEnded={nothingEnded}
+          onPageFullscreen={noFullscreen}
+          onReach={() => undefined}
+          rect={ON_SCREEN}
+          resizing={false}
+          url="https://zoom.us"
+          window="1"
+        />,
+      );
+      fireEvent(
+        view(container),
+        Object.assign(
+          new Event(WEBVIEW_EXTERNAL_APP_EVENT, { cancelable: true }),
+          {
+            dismiss: () => undefined,
+            mayRemember: true,
+            open: (remember: boolean) => {
+              answers.push(`open ${String(remember)}`);
+            },
+            origin: "https://zoom.us",
+            url: "zoommtg://zoom.us/join?confno=1",
+          },
+        ),
+      );
+
+      const open = within(
+        await screen.findByRole("alertdialog", { name: "Open Zoom?" }),
+      ).getByRole("button", { name: "Open Zoom" });
+      // The page waits on it, so a focused window gives it the keyboard.
+      await waitFor(() => {
+        expect(open).toHaveFocus();
+      });
+      await userEvent.click(open);
+
+      expect(answers).toStrictEqual(["open false"]);
+      expect(screen.queryByRole("alertdialog")).toBeNull();
     });
   });
 

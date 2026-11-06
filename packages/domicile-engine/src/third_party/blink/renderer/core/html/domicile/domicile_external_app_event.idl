@@ -1,0 +1,29 @@
+// Copyright 2026 Connor Prussin
+// SPDX-License-Identifier: MIT
+
+// Dispatched by a <webview> when its page opens a link for an application,
+// such as zoommtg: or mailto:, so the shell asks whether to open it. Nothing
+// opens until the shell answers on the event.
+//
+// Domicile-only, not a web standard. No constructor: only the browser creates
+// one.
+[
+    RuntimeEnabled=DomicileExternalSurface,
+    Exposed=Window
+] interface DomicileExternalAppEvent : Event {
+  // The link, e.g. "zoommtg://zoom.us/join?confno=1".
+  readonly attribute USVString url;
+
+  // The site that opened it, e.g. "https://zoom.us", or "" for none.
+  readonly attribute USVString origin;
+
+  // Whether `open(true)` may let the site open these links without asking
+  // again. Only a secure site may.
+  readonly attribute boolean mayRemember;
+
+  // Answers: open the link in its scheme's default application, remembering
+  // the choice for the site if `remember` and `mayRemember`; or open nothing.
+  // Each throws InvalidStateError if already answered or withdrawn.
+  [RaisesException] undefined open(optional boolean remember = false);
+  [RaisesException] undefined dismiss();
+};

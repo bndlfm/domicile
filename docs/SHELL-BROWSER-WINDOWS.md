@@ -782,3 +782,55 @@ frame.addEventListener(WEBVIEW_DIALOG_EVENT, (event) => {
 
 Manganese draws it over the page it pauses
 (`window-management/browser/PageDialog.tsx`), and over an extension's popup.
+
+## Links for applications
+
+A link for an application, such as `zoommtg:` or `mailto:`, fires
+`domicile-external-app` instead of Chrome's "Open xdg-open?" dialog:
+
+<!-- tab: React -->
+
+```tsx
+import { WEBVIEW_EXTERNAL_APP_EVENT } from "@domicile-desktop/sdk/webview-element";
+
+useEffect(() => {
+  const frame = frameRef.current; // the browser window's element
+  const asked = (event) => {
+    event.preventDefault(); // claim it
+    ask(event.url, event.origin, event.mayRemember).then(
+      (remember) => event.open(remember),
+      () => event.dismiss(),
+    );
+  };
+  frame?.addEventListener(WEBVIEW_EXTERNAL_APP_EVENT, asked);
+  return () => frame?.removeEventListener(WEBVIEW_EXTERNAL_APP_EVENT, asked);
+}, []);
+```
+
+<!-- tab: JavaScript -->
+
+```js
+import { WEBVIEW_EXTERNAL_APP_EVENT } from "@domicile-desktop/sdk/webview-element";
+
+frame.addEventListener(WEBVIEW_EXTERNAL_APP_EVENT, (event) => {
+  event.preventDefault(); // claim it
+  ask(event.url, event.origin, event.mayRemember).then(
+    (remember) => event.open(remember),
+    () => event.dismiss(),
+  );
+});
+```
+
+<!-- /tabs -->
+
+- **`preventDefault()`:** claims it. Unclaimed, nothing opens.
+- **`url`:** the link. **`origin`:** the site that opened it, or `""`.
+- **`open(remember)`:** launches the scheme's default application. With
+  `remember` and `mayRemember` (secure sites only), the site opens these links
+  without asking from then on.
+- **Not fired** for a blocked scheme or a site already remembered.
+- **One at a time.** A newer one replaces the open one, which opens nothing
+  and fires `domicile-external-app-withdrawn`.
+
+Manganese asks over the page, naming the application from its desktop entry
+(`manganese-page-requests/ExternalAppAsk.tsx`).

@@ -401,6 +401,19 @@ class WebViewGuest : public mojom::WebViewGuest,
   // element went away.
   void AskToNavigate(const GURL& url, base::OnceCallback<void(bool)> answered);
 
+  // Asks the shell whether to open `url` in its scheme's application. See
+  // ExternalAppRequested in the mojom and
+  // //chrome/browser/domicile/domicile_external_apps.h.
+  //
+  // `answered` gets whether to open and whether to remember, or false for
+  // both if the shell ignored it or the element went away.
+  using ExternalAppAnswered =
+      base::OnceCallback<void(bool open, bool remember)>;
+  void AskToOpenExternalApp(const GURL& url,
+                            const std::optional<url::Origin>& origin,
+                            bool may_remember,
+                            ExternalAppAnswered answered);
+
   base::WeakPtr<WebViewGuest> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
