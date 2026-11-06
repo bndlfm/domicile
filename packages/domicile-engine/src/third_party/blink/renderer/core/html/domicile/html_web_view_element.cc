@@ -31,6 +31,7 @@
 #include "third_party/blink/renderer/core/html/domicile/domicile_external_app_event.h"
 #include "third_party/blink/renderer/core/html/domicile/domicile_file_chooser_event.h"
 #include "third_party/blink/renderer/core/html/domicile/domicile_permission_request_event.h"
+#include "third_party/blink/renderer/core/html/domicile/domicile_sign_in_event.h"
 #include "third_party/blink/renderer/core/html/domicile/domicile_will_navigate_event.h"
 #include "third_party/blink/renderer/core/html/parser/html_parser_idioms.h"
 #include "third_party/blink/renderer/core/html_names.h"
@@ -128,6 +129,11 @@ constexpr char kDialogWithdrawnEvent[] = "domicile-dialog-withdrawn";
 // withdrawal. See domicile_external_app_event.h.
 constexpr char kExternalAppEvent[] = "domicile-external-app";
 constexpr char kExternalAppWithdrawnEvent[] = "domicile-external-app-withdrawn";
+
+// A sign-in a site or proxy asked for, which the shell answers on the event,
+// and its withdrawal. See domicile_sign_in_event.h.
+constexpr char kSignInEvent[] = "domicile-sign-in";
+constexpr char kSignInWithdrawnEvent[] = "domicile-sign-in-withdrawn";
 
 // The values of a site permission's setting. Strings, as for `security`.
 constexpr char kSettingAsk[] = "ask";
@@ -277,6 +283,7 @@ void HTMLWebViewElement::Trace(Visitor* visitor) const {
   visitor->Trace(device_request_);
   visitor->Trace(dialog_);
   visitor->Trace(external_app_);
+  visitor->Trace(sign_in_);
   visitor->Trace(pointer_listener_);
   HTMLFrameElementBase::Trace(visitor);
 }
@@ -1019,6 +1026,41 @@ void HTMLWebViewElement::ExternalAppRequested(
 void HTMLWebViewElement::ExternalAppAnswered(DomicileExternalAppEvent& event) {
   if (external_app_ == &event) {
     external_app_ = nullptr;
+  }
+}
+
+// Held in `sign_in_` until answered. A newer request replaces an older one,
+// which is canceled and withdrawn from the shell first.
+void HTMLWebViewElement::SignInRequested(const KURL& url,
+                                         const String& realm,
+                                         bool proxy,
+                                         bool secure,
+                                         SignInRequestedCallback callback) {
+  if (sign_in_) {
+    sign_in_->DismissIfUnanswered();
+    DispatchEvent(*Event::CreateBubble(AtomicString(kSignInWithdrawnEvent)));
+  }
+  auto* event = MakeGarbageCollected<DomicileSignInEvent>(
+      AtomicString(kSignInEvent), url.GetString(), realm, proxy, secure,
+      std::move(callback), *this);
+  sign_in_ = event;
+  DispatchEvent(*event);
+  if (!event->defaultPrevented()) {
+    event->DismissIfUnanswered();
+  }
+}
+
+// Only for a request still held: one the shell answered is already gone.
+void HTMLWebViewElement::SignInWithdrawn() {
+  if (sign_in_) {
+    sign_in_->DismissIfUnanswered();
+    DispatchEvent(*Event::CreateBubble(AtomicString(kSignInWithdrawnEvent)));
+  }
+}
+
+void HTMLWebViewElement::SignInAnswered(DomicileSignInEvent& event) {
+  if (sign_in_ == &event) {
+    sign_in_ = nullptr;
   }
 }
 

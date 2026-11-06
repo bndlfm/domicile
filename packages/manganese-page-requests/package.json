@@ -32,12 +32,14 @@
     "./PageDialog": "./src/PageDialog.tsx",
     "./PermissionAsk": "./src/PermissionAsk.tsx",
     "./permission-names": "./src/permission-names.tsx",
+    "./SignInAsk": "./src/SignInAsk.tsx",
     "./site-permissions": "./src/site-permissions.ts",
     "./useDeviceRequest": "./src/useDeviceRequest.ts",
     "./useDialogRequest": "./src/useDialogRequest.ts",
     "./useExternalAppRequest": "./src/useExternalAppRequest.ts",
     "./useLinkOpener": "./src/useLinkOpener.ts",
-    "./usePermissionRequest": "./src/usePermissionRequest.ts"
+    "./usePermissionRequest": "./src/usePermissionRequest.ts",
+    "./useSignInRequest": "./src/useSignInRequest.ts"
   },
   "files": [
     "src/**",

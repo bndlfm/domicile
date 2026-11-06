@@ -17,6 +17,7 @@ import {
   WEBVIEW_PAGE_CHANGE_EVENT,
   WEBVIEW_PAGE_FULLSCREEN_CHANGE_EVENT,
   WEBVIEW_PERMISSION_REQUEST_EVENT,
+  WEBVIEW_SIGN_IN_EVENT,
   WEBVIEW_SITE_PERMISSIONS_CHANGE_EVENT,
   WEBVIEW_TARGET_URL_CHANGE_EVENT,
   WEBVIEW_ZOOM_CHANGE_EVENT,
@@ -2094,6 +2095,68 @@ describe("BrowserWindow", () => {
       await userEvent.click(open);
 
       expect(answers).toStrictEqual(["open false"]);
+      expect(screen.queryByRole("alertdialog")).toBeNull();
+    });
+  });
+
+  // The engine draws no sign-in dialog.
+  describe("a sign-in its site asks for", () => {
+    it("asks for it over the page", async () => {
+      const answers: string[] = [];
+      const { container } = render(
+        <BrowserWindow
+          behindPanel={false}
+          clickThrough={false}
+          covered={false}
+          depth={0}
+          domicile={silentDomicile}
+          dragging={false}
+          focused
+          frame={FRAME}
+          fullscreen={false}
+          isApp
+          motion="resting"
+          onDescription={noDescription}
+          onFocusRequest={() => undefined}
+          onIcon={noIcon}
+          onMotionEnded={nothingEnded}
+          onPageFullscreen={noFullscreen}
+          onReach={() => undefined}
+          rect={ON_SCREEN}
+          resizing={false}
+          url="http://router.home"
+          window="1"
+        />,
+      );
+      fireEvent(
+        view(container),
+        Object.assign(new Event(WEBVIEW_SIGN_IN_EVENT, { cancelable: true }), {
+          dismiss: () => undefined,
+          proxy: false,
+          realm: "Router",
+          secure: false,
+          signIn: (username: string, password: string) => {
+            answers.push(`sign in ${username} ${password}`);
+          },
+          url: "http://router.home/",
+        }),
+      );
+
+      const dialog = await screen.findByRole("alertdialog", {
+        name: "Sign in to router.home",
+      });
+      const username = within(dialog).getByLabelText("Username");
+      // The page waits on it, so a focused window gives it the keyboard.
+      await waitFor(() => {
+        expect(username).toHaveFocus();
+      });
+      await userEvent.type(username, "admin");
+      await userEvent.type(
+        within(dialog).getByLabelText("Password"),
+        "hunter2{Enter}",
+      );
+
+      expect(answers).toStrictEqual(["sign in admin hunter2"]);
       expect(screen.queryByRole("alertdialog")).toBeNull();
     });
   });

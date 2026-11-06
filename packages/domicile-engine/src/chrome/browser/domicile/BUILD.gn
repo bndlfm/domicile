@@ -3,8 +3,8 @@
 
 # The fork's browser-side code that needs //chrome: the command socket, the
 # desk, browser windows, extensions, history, site data, file dialogs,
-# permission prompts, device choosers, links for applications, printing and
-# pointer warps.
+# permission prompts, device choosers, links for applications, sign-ins,
+# printing and pointer warps.
 #
 # A separate target because //chrome/browser:browser accepts no new sources,
 # and it keeps the fork to one added dependency in a Chromium-owned file.
@@ -56,6 +56,8 @@ source_set("domicile") {
     "domicile_shell_fetch.h",
     "domicile_shell_windows.cc",
     "domicile_shell_windows.h",
+    "domicile_sign_in.cc",
+    "domicile_sign_in.h",
     "domicile_site_data.cc",
     "domicile_site_data.h",
     "domicile_tab_helpers.cc",
@@ -150,6 +152,8 @@ source_set("domicile") {
     # Links for applications the shell asks about, in place of Chrome's
     # dialog (patch 0176).
     "//chrome/browser/external_protocol",
+    # Sign-ins the shell asks for, in place of Chrome's dialog (patch 0177).
+    "//chrome/browser/ui/login",
     # The Settings app's site permissions, listed and set through the command
     # socket.
     "//components/content_settings/core/browser",

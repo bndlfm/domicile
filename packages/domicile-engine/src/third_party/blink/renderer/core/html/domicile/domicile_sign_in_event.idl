@@ -1,0 +1,31 @@
+// Copyright 2026 Connor Prussin
+// SPDX-License-Identifier: MIT
+
+// Dispatched by a <webview> when a site or a proxy asks for a user name and
+// password (HTTP authentication), so the shell asks the user. The request
+// waits until the shell answers on the event.
+//
+// Domicile-only, not a web standard. No constructor: only the browser creates
+// one.
+[
+    RuntimeEnabled=DomicileExternalSurface,
+    Exposed=Window
+] interface DomicileSignInEvent : Event {
+  // The server or proxy that asked, e.g. "https://example.com".
+  readonly attribute USVString url;
+
+  // Its name for what is behind the sign-in, as the server sent it. May be
+  // "".
+  readonly attribute DOMString realm;
+
+  // Whether a proxy asked rather than the site.
+  readonly attribute boolean proxy;
+
+  // False when the password would cross the network unencrypted.
+  readonly attribute boolean secure;
+
+  // Answers: send the user name and password, or cancel. Each throws
+  // InvalidStateError if already answered or withdrawn.
+  [RaisesException] undefined signIn(DOMString username, DOMString password);
+  [RaisesException] undefined dismiss();
+};

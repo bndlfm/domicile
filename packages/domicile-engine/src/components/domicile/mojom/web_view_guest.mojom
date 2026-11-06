@@ -504,6 +504,26 @@ interface WebViewGuestClient {
                        bool may_remember)
       => (bool open, bool remember);
 
+  // A site or a proxy asked for a user name and password (HTTP
+  // authentication), so the shell must ask the user. `url` is the server or
+  // proxy that asked, such as https://example.com. `realm` is its name for
+  // what is behind the sign-in, as the server sent it, and may be empty.
+  // `proxy` is whether a proxy asked rather than the site. `secure` is false
+  // when the password would cross the network unencrypted. Chrome draws its
+  // sign-in dialog on the outermost WebContents' window, which for a guest is
+  // the shell's. See //chrome/browser/domicile/domicile_sign_in.h.
+  //
+  // `sign_in` sends `username` and `password`; false cancels, and the page
+  // shows the server's refusal. An unhandled event or a closed pipe cancels.
+  // A newer request replaces an older one, which is canceled.
+  SignInRequested(url.mojom.Url url, string realm, bool proxy, bool secure)
+      => (bool sign_in, string username, string password);
+
+  // The browser dropped the unanswered SignInRequested, for example because
+  // the page navigated or another request for the same realm was answered.
+  // Its answer, if one is sent, is ignored.
+  SignInWithdrawn();
+
   // The page entered or left fullscreen, as a video's fullscreen button does.
   // The page fills the element's box; the shell decides whether the element
   // fills the screen. Sent only when it changes; a fresh guest sends nothing.

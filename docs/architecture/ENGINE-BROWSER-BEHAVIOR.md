@@ -128,6 +128,20 @@ Patch `0110`:
   remembered site opens at once. "Always allow" is Chrome's, in the profile.
 - A page outside any guest opens nothing.
 
+## Sign-ins
+
+- A site or proxy that asks for a user name and password (HTTP
+  authentication) asks the shell (`domicile-sign-in`), not Chrome's dialog,
+  which anchors to the shell's window the same way.
+- Patch `0177` adds `LoginHandler::SetCreateOverride`;
+  `chrome/browser/domicile/domicile_sign_in.h` sets it, so every
+  `LoginHandler` asks the guest's element.
+- Chrome still decides when to ask, and extensions may answer first. A
+  sign-in answers other requests for the same realm; a cancel is that
+  request's alone. A newer request replaces an older, unanswered one.
+- Chrome's password manager does not fill or save these.
+- A page outside any guest gets no sign-in.
+
 ## Host shortcuts when nested
 
 Under a host compositor, the engine inhibits the host's shortcuts so the shell
@@ -178,5 +192,6 @@ The engine leaves out Chrome's own UI, which the shell replaces.
 - `guard-webview-partition.sh`: partitions.
 - `guard-webview-will-navigate.sh`: will-navigate.
 - `guard-webview-external-app.sh`: links for applications.
+- `guard-webview-sign-in.sh`: sign-ins.
 - `guard-browser-brand.sh`: the Google Chrome brand.
 - No guard reads the browser's offers.
