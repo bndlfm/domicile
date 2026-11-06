@@ -834,3 +834,54 @@ frame.addEventListener(WEBVIEW_EXTERNAL_APP_EVENT, (event) => {
 
 Manganese asks over the page, naming the application from its desktop entry
 (`manganese-page-requests/ExternalAppAsk.tsx`).
+
+## Sign-ins
+
+A site or proxy that asks for a user name and password (HTTP authentication)
+fires `domicile-sign-in` instead of Chrome's "Sign in" dialog:
+
+<!-- tab: React -->
+
+```tsx
+import { WEBVIEW_SIGN_IN_EVENT } from "@domicile-desktop/sdk/webview-element";
+
+useEffect(() => {
+  const frame = frameRef.current; // the browser window's element
+  const asked = (event) => {
+    event.preventDefault(); // claim it
+    ask(event.url, event.proxy, event.secure).then(
+      ({ username, password }) => event.signIn(username, password),
+      () => event.dismiss(),
+    );
+  };
+  frame?.addEventListener(WEBVIEW_SIGN_IN_EVENT, asked);
+  return () => frame?.removeEventListener(WEBVIEW_SIGN_IN_EVENT, asked);
+}, []);
+```
+
+<!-- tab: JavaScript -->
+
+```js
+import { WEBVIEW_SIGN_IN_EVENT } from "@domicile-desktop/sdk/webview-element";
+
+frame.addEventListener(WEBVIEW_SIGN_IN_EVENT, (event) => {
+  event.preventDefault(); // claim it
+  ask(event.url, event.proxy, event.secure).then(
+    ({ username, password }) => event.signIn(username, password),
+    () => event.dismiss(),
+  );
+});
+```
+
+<!-- /tabs -->
+
+- **`preventDefault()`:** claims it. Unclaimed, it is canceled and the page
+  shows the site's refusal.
+- **`url`:** the server or proxy that asked. **`proxy`:** whether a proxy
+  asked. **`secure`:** false when the password would cross the network
+  unencrypted. **`realm`:** the server's own text; Chrome does not show it.
+- **One at a time.** A newer one replaces the open one, which is canceled
+  and fires `domicile-sign-in-withdrawn`, as does one the browser drops.
+- A sign-in also answers other requests for the same realm.
+
+Manganese asks over the page (`manganese-page-requests/SignInAsk.tsx`).

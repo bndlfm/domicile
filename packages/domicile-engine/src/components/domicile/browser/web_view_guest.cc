@@ -1099,6 +1099,48 @@ void WebViewGuest::AskToOpenExternalApp(
                                                   false));
 }
 
+int WebViewGuest::AskToSignIn(const GURL& url,
+                              const std::string& realm,
+                              bool proxy,
+                              bool secure,
+                              SignInAnswered answered) {
+  const int id = ++last_sign_in_;
+  open_sign_in_ = id;
+  // Logged before asking; the sign-in guard greps for it.
+  LOG(INFO) << "domicile: a <webview>'s " << (proxy ? "proxy" : "site")
+            << " asked to sign in; asking the shell.";
+  // Wrapped, as in AskPermission: unanswered cancels. Bound to a weak
+  // pointer, so an answer after the guest is gone still runs `answered`.
+  client_->SignInRequested(
+      url, realm, proxy, secure,
+      mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+          base::BindOnce(
+              [](base::WeakPtr<WebViewGuest> guest, int id,
+                 SignInAnswered answered, bool sign_in,
+                 const std::string& username, const std::string& password) {
+                if (guest && guest->open_sign_in_ == id) {
+                  guest->open_sign_in_ = 0;
+                }
+                if (!sign_in) {
+                  std::move(answered).Run(std::nullopt);
+                  return;
+                }
+                std::move(answered).Run(std::make_pair(
+                    base::UTF8ToUTF16(username), base::UTF8ToUTF16(password)));
+              },
+              weak_factory_.GetWeakPtr(), id, std::move(answered)),
+          false, std::string(), std::string()));
+  return id;
+}
+
+void WebViewGuest::WithdrawSignIn(int id) {
+  if (open_sign_in_ != id || id == 0) {
+    return;
+  }
+  open_sign_in_ = 0;
+  client_->SignInWithdrawn();
+}
+
 void WebViewGuest::Navigate(const GURL& url) {
   // This object is destroyed with the guest's WebContents, so guest_contents_
   // is never null here.

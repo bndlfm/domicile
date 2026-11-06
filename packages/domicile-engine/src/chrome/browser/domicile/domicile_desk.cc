@@ -17,6 +17,7 @@
 #include "chrome/browser/domicile/domicile_external_apps.h"
 #include "chrome/browser/domicile/domicile_permissions.h"
 #include "chrome/browser/domicile/domicile_printing.h"
+#include "chrome/browser/domicile/domicile_sign_in.h"
 #include "chrome/browser/domicile/domicile_window_controller.h"
 #include "chrome/browser/extensions/domicile_desk_hooks.h"
 #include "chrome/browser/profiles/profile.h"
@@ -107,6 +108,8 @@ void StartDesk(Profile* profile) {
     UseTheShellForDeviceChoosers();
     // Links for applications, asked about by the shell.
     UseTheShellForExternalApps();
+    // Sign-ins sites and proxies ask for, asked by the shell.
+    UseTheShellForSignIns();
     return true;
   }();
   CHECK(installed);
