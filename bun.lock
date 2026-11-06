@@ -914,8 +914,10 @@
       "name": "@domicile-desktop/manganese-page-requests",
       "version": "1.1.1",
       "dependencies": {
+        "@cprussin/option-result": "catalog:",
         "@domicile-desktop/component-library": "workspace:*",
         "@domicile-desktop/sdk": "workspace:*",
+        "@domicile-desktop/system-apps": "workspace:*",
         "@pandacss/dev": "catalog:",
         "@phosphor-icons/react": "catalog:",
         "react": "catalog:",

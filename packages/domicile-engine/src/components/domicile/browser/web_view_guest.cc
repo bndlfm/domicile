@@ -1084,6 +1084,21 @@ void WebViewGuest::AskToNavigate(const GURL& url,
                base::BindPostTaskToCurrentDefault(std::move(answered)), true));
 }
 
+void WebViewGuest::AskToOpenExternalApp(
+    const GURL& url,
+    const std::optional<url::Origin>& origin,
+    bool may_remember,
+    ExternalAppAnswered answered) {
+  // Logged before asking; the external app guard greps for it.
+  LOG(INFO) << "domicile: a <webview>'s page asked to open a "
+            << url.GetScheme() << ": link; asking the shell.";
+  // Wrapped, as in AskPermission: unanswered opens nothing.
+  client_->ExternalAppRequested(
+      url, origin.has_value() ? origin->GetURL() : GURL(), may_remember,
+      mojo::WrapCallbackWithDefaultInvokeIfNotRun(std::move(answered), false,
+                                                  false));
+}
+
 void WebViewGuest::Navigate(const GURL& url) {
   // This object is destroyed with the guest's WebContents, so guest_contents_
   // is never null here.

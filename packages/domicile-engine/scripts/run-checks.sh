@@ -79,6 +79,7 @@ TOGETHER=(
   guard-webview-count-matches
   guard-webview-dialog
   guard-webview-beforeunload
+  guard-webview-external-app
   guard-webview-print
   guard-webview-context-menu
   guard-webview-upload
