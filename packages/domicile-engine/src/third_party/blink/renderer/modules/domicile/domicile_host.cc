@@ -921,6 +921,19 @@ void DomicileHost::activateExtension(ScriptState*,
   }
 }
 
+// A document going away has nobody waiting to hear it.
+void DomicileHost::ReportShellRan(const String& serial) {
+  if (EnsureBound()) {
+    channel_->ShellRan(serial);
+  }
+}
+
+void DomicileHost::ReportShellFailed(const String& serial, const String& why) {
+  if (EnsureBound()) {
+    channel_->ShellFailed(serial, why);
+  }
+}
+
 // THE PAGE'S INPUT, which was the SDK's `registerElements`. An <app> maps a
 // pointer over it and hands it here; the keys are the document's, and are
 // heard on it. On the document and in the bubbling phase, as the SDK's were,

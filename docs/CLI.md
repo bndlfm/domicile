@@ -33,8 +33,13 @@ Print the shell the running desktop serves.
 ## `domicile load-shell <shell>`
 
 Serve another shell, or a new build of the same one. Windows stay open. It
-takes the same forms as `domicile [shell]`. A failed build prints the error
-and keeps the running shell.
+takes the same forms as `domicile [shell]`.
+
+- A failed build prints the error and keeps the running shell.
+- A shell that fails to run (it will not load, has no `Shell`, or `Shell`
+  throws) prints why, and the desktop goes back to the shell it had.
+- A module rebuilt in place has no old shell to go back to, so it stays on its
+  error screen.
 
 ## `domicile open <file|folder|url>`
 

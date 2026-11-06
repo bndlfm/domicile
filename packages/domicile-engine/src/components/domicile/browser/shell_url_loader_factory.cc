@@ -12,6 +12,7 @@
 #include "base/logging.h"
 #include "base/strings/escape.h"
 #include "base/strings/strcat.h"
+#include "base/strings/string_number_conversions.h"
 #include "mojo/public/cpp/system/data_pipe.h"
 #include "components/domicile/browser/app_roots.h"
 #include "components/domicile/browser/desk_lock.h"
@@ -190,7 +191,8 @@ bool ShellURLLoaderFactory::MayReadFiles(
 }
 
 // static
-std::string ShellURLLoaderFactory::ShellDocument(const std::string& module) {
+std::string ShellURLLoaderFactory::ShellDocument(const std::string& module,
+                                                uint64_t serial) {
   // The fixed document every shell loads into. It holds only what a desktop
   // needs:
   //
@@ -210,10 +212,16 @@ std::string ShellURLLoaderFactory::ShellDocument(const std::string& module) {
   // DomicileShell loads it after the body is parsed and calls its `Shell`
   // export; see DomicileShell, which also reports load failures.
   //
+  // The serial goes back to the browser with whether the module ran, so
+  // ShellSwap hears only the document it served (DomicileShell).
+  //
   // The body stays empty with no ids: every name in this document is in the
   // shell's namespace and could collide with the shell's own lookups.
-  return ModuleDocument(module, "domicile-shell-module",
-                        "    <title>Domicile</title>\n",
+  const std::string head =
+      base::StrCat({"    <meta content=\"", base::NumberToString(serial),
+                    "\" name=\"domicile-shell-serial\" />\n",
+                    "    <title>Domicile</title>\n"});
+  return ModuleDocument(module, "domicile-shell-module", head,
                         "      @view-transition {\n"
                         "        navigation: auto;\n"
                         "      }\n"
@@ -270,6 +278,7 @@ void ShellURLLoaderFactory::ServeShellDocument(
   // Read per request so each load serves whatever `domicile load-shell` last
   // set. ShellSource starts with the command-line values.
   const std::string module = ShellSource::Get().Module();
+  const uint64_t serial = ShellSource::Get().Serial();
   if (module.empty()) {
     // Fail instead of serving an empty page that looks like a broken shell.
     LOG(ERROR) << "domicile: the engine was started without --"
@@ -280,7 +289,8 @@ void ShellURLLoaderFactory::ServeShellDocument(
             network::URLLoaderCompletionStatus(net::ERR_INVALID_ARGUMENT));
     return;
   }
-  SendDocument(std::move(client), ShellDocument(module), ShellDocumentHead());
+  SendDocument(std::move(client), ShellDocument(module, serial),
+               ShellDocumentHead());
 }
 
 void ShellURLLoaderFactory::ServeApp(

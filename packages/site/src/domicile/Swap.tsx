@@ -31,7 +31,7 @@ ${ruleOf("stacked.js")}`;
 export const Swap = () => (
   <Section
     id="swap"
-    lede="Change your code and run one command. The new shell takes over, and every window stays open. The race doesn't even stop. A build that fails keeps the shell you had."
+    lede="Change your code and run one command. The new shell takes over, and every window stays open. The race doesn't even stop. A shell that fails to build or run keeps the shell you had."
     title="Swap the shell. Keep your windows."
   >
     <div className={layoutStyles}>

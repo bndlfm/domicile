@@ -176,36 +176,45 @@ TEST(ShellURLLoaderFactoryTest, OnlyTheShellMayAskForHome) {
 }
 
 TEST(ShellDocumentTest, DeclaresACharset) {
-  EXPECT_NE(ShellURLLoaderFactory::ShellDocument("shell.js")
+  EXPECT_NE(ShellURLLoaderFactory::ShellDocument("shell.js", 0)
                 .find("charset=\"utf-8\""),
             std::string::npos);
 }
 
 TEST(ShellDocumentTest, DeclaresAViewport) {
   // Without it, layout and compositor coordinates disagree by a scale factor.
-  EXPECT_NE(ShellURLLoaderFactory::ShellDocument("shell.js")
+  EXPECT_NE(ShellURLLoaderFactory::ShellDocument("shell.js", 0)
                 .find("width=device-width, initial-scale=1"),
             std::string::npos);
 }
 
 TEST(ShellDocumentTest, HasNoBodyMargin) {
   // A body margin would offset every window from where the compositor puts it.
-  EXPECT_NE(ShellURLLoaderFactory::ShellDocument("shell.js").find("margin: 0"),
+  EXPECT_NE(ShellURLLoaderFactory::ShellDocument("shell.js", 0).find("margin: 0"),
             std::string::npos);
 }
 
 TEST(ShellDocumentTest, NamesTheModuleItsShellIsIn) {
   // Blink's DomicileShell reads this element and runs the module.
-  const std::string document = ShellURLLoaderFactory::ShellDocument("shell.js");
+  const std::string document = ShellURLLoaderFactory::ShellDocument("shell.js", 0);
   EXPECT_NE(document.find("<meta content=\"./shell.js\" "
                           "name=\"domicile-shell-module\" />"),
+            std::string::npos);
+}
+
+TEST(ShellDocumentTest, NamesTheSerialItWasServedFor) {
+  // DomicileShell reports it back, so a swap hears only its own document.
+  const std::string document =
+      ShellURLLoaderFactory::ShellDocument("shell.js", 42);
+  EXPECT_NE(document.find("<meta content=\"42\" "
+                          "name=\"domicile-shell-serial\" />"),
             std::string::npos);
 }
 
 TEST(ShellDocumentTest, RunsNoScriptOfItsOwn) {
   // A page script could only reach the desktop through a global that every
   // script could read. The engine hands the desktop to the shell instead.
-  const std::string document = ShellURLLoaderFactory::ShellDocument("shell.js");
+  const std::string document = ShellURLLoaderFactory::ShellDocument("shell.js", 0);
   EXPECT_EQ(document.find("<script"), std::string::npos);
   EXPECT_EQ(document.find("navigator.domicile"), std::string::npos);
 }
@@ -225,7 +234,7 @@ TEST(ShellDocumentTest, CrossfadesFromTheShellBefore) {
   // `load_shell` navigates the window instead of reloading it, so Blink runs
   // a cross-document view transition when both documents opt in. Every shell
   // document is this one, so the splash crossfades into the built shell.
-  const std::string document = ShellURLLoaderFactory::ShellDocument("shell.js");
+  const std::string document = ShellURLLoaderFactory::ShellDocument("shell.js", 0);
   EXPECT_NE(document.find("@view-transition {\n        navigation: auto;"),
             std::string::npos);
 }
@@ -252,14 +261,14 @@ TEST(ShellURLLoaderFactoryTest, ShellFilesAreNeverReusedFromTheMemoryCache) {
 
 TEST(ShellDocumentTest, HandsTheShellAnEmptyBody) {
   // `mount-point.test.ts` uses the same empty body as a fixture.
-  const std::string document = ShellURLLoaderFactory::ShellDocument("shell.js");
+  const std::string document = ShellURLLoaderFactory::ShellDocument("shell.js", 0);
   EXPECT_NE(document.find("<body></body>"), std::string::npos);
 }
 
 TEST(ShellDocumentTest, EncodesTheModuleName) {
   // The name comes from disk; it must not be able to end the attribute.
   const std::string document =
-      ShellURLLoaderFactory::ShellDocument("a\"><script>b.js");
+      ShellURLLoaderFactory::ShellDocument("a\"><script>b.js", 0);
   EXPECT_EQ(document.find("<script>b.js"), std::string::npos);
   EXPECT_EQ(document.find("a\""), std::string::npos);
 }
@@ -267,14 +276,14 @@ TEST(ShellDocumentTest, EncodesTheModuleName) {
 TEST(ShellDocumentTest, NamesNothingAShellCouldCollideWith) {
   // Any id here is in the shell's namespace. `shell-manganese`'s `mountPoint`,
   // for example, looks up the id `domicile-shell`.
-  const std::string document = ShellURLLoaderFactory::ShellDocument("shell.js");
+  const std::string document = ShellURLLoaderFactory::ShellDocument("shell.js", 0);
   EXPECT_EQ(document.find("id="), std::string::npos);
 }
 
 TEST(ShellDocumentTest, LeavesAHashInAFilenameAlone) {
   // An unencoded `#` would start a fragment, so the browser would request
   // only the part before it.
-  const std::string document = ShellURLLoaderFactory::ShellDocument("a#b.js");
+  const std::string document = ShellURLLoaderFactory::ShellDocument("a#b.js", 0);
   EXPECT_EQ(document.find("a#b.js"), std::string::npos);
   EXPECT_NE(document.find("a%23b.js"), std::string::npos);
 }
