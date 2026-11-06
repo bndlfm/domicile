@@ -9,11 +9,15 @@
 use smithay::backend::allocator::dmabuf::Dmabuf;
 use smithay::backend::allocator::format::FormatSet;
 use smithay::backend::allocator::Format;
+use smithay::backend::allocator::gbm::GbmDevice;
 use smithay::backend::egl::{EGLContext, EGLDevice, EGLDisplay};
 use smithay::backend::renderer::gles::GlesRenderer;
 use smithay::backend::renderer::ImportDma as _;
+use smithay::utils::DeviceFd;
 
+use std::fs;
 use std::os::unix::fs::MetadataExt as _;
+use std::os::unix::io::{FromRawFd as _, IntoRawFd as _};
 use std::path::{Path, PathBuf};
 
 /// The EGL library Smithay loads. Probed first so a missing GPU stack is an
@@ -53,22 +57,74 @@ pub fn headless_renderer() -> Result<(GlesRenderer, DmabufImporter), ImportError
     // SAFETY: this opens the same library Smithay opens next, running the
     // same initializers.
     unsafe { libloading::Library::new(EGL_LIBRARY) }?;
-    let devices = EGLDevice::enumerate()?;
-    let device = preferred_device(devices, EGLDevice::is_software).ok_or(ImportError::NoDevice)?;
-    let main_device = drm_node(&device);
-    let node = device
-        .render_device_path()
-        .or_else(|_| device.drm_device_path())
-        .ok();
-    tracing::debug!(device = ?node, main_device, "dmabuf import device");
-    // SAFETY: the device comes from EGL's own enumeration, and the display
-    // takes ownership of it.
-    let display = unsafe { EGLDisplay::new(device) }?;
+    let (display, node, main_device) = match EGLDevice::enumerate() {
+        Ok(devices) => {
+            let device = preferred_device(devices, EGLDevice::is_software).ok_or(ImportError::NoDevice)?;
+            let main_device = drm_node(&device);
+            let node = device
+                .render_device_path()
+                .or_else(|_| device.drm_device_path())
+                .ok();
+            tracing::debug!(device = ?node, main_device, "dmabuf import device");
+            // SAFETY: the device comes from EGL's own enumeration, and the display
+            // takes ownership of it.
+            (unsafe { EGLDisplay::new(device) }?, node, main_device)
+        }
+        Err(err) => {
+            tracing::debug!(?err, "EGL device enumeration unavailable; trying GBM render nodes");
+            let (display, node) = display_from_gbm_render_node()?;
+            let main_device = fs::metadata(&node).ok().map(|metadata| metadata.rdev());
+            (display, Some(node), main_device)
+        }
+    };
     let context = EGLContext::new(&display)?;
     // SAFETY: the renderer is created, used and dropped on the Wayland
     // thread, which is where the context is made current.
     let renderer = unsafe { GlesRenderer::new(context) }?;
     Ok((renderer, DmabufImporter { main_device, node }))
+}
+
+/// Creates an EGL display from a DRM render node through GBM. NVIDIA's EGL
+/// implementation exposes the GBM platform but not the older
+/// `EGL_EXT_device_enumeration` API used by `EGLDevice::enumerate`.
+fn display_from_gbm_render_node() -> Result<(EGLDisplay, PathBuf), ImportError> {
+    let mut nodes: Vec<_> = fs::read_dir("/dev/dri")
+        .map_err(|_| ImportError::NoDevice)?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.starts_with("renderD"))
+        })
+        .collect();
+    nodes.sort();
+
+    for node in nodes {
+        let file = match fs::File::open(&node) {
+            Ok(file) => file,
+            Err(err) => {
+                tracing::debug!(?node, %err, "cannot open DRM render node");
+                continue;
+            }
+        };
+        let fd = unsafe { std::os::unix::io::OwnedFd::from_raw_fd(file.into_raw_fd()) };
+        let gbm = match GbmDevice::new(DeviceFd::from(fd)) {
+            Ok(gbm) => gbm,
+            Err(err) => {
+                tracing::debug!(?node, ?err, "cannot create GBM device");
+                continue;
+            }
+        };
+        // SAFETY: the GBM device remains alive inside the EGL display's native
+        // handle for as long as the display is alive.
+        match unsafe { EGLDisplay::new(gbm) } {
+            Ok(display) => return Ok((display, node)),
+            Err(err) => tracing::debug!(?node, ?err, "cannot create EGL display from GBM"),
+        }
+    }
+
+    Err(ImportError::NoDevice)
 }
 
 impl DmabufImporter {

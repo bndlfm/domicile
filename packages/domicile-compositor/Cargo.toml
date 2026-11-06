@@ -87,6 +87,7 @@ default-features = false
 features = [
     "wayland_frontend",
     "backend_egl",
+    "backend_gbm",
     "renderer_gl",
 ]
 
