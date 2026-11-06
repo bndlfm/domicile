@@ -88,12 +88,6 @@ type Named = {
    * holds the inbox's unread conversations.
    */
   notifiesAs: string;
-  /**
-   * A sender whose notifications tell of the same conversations, such as the
-   * inbox's site when the inbox notifies under another name. Those are
-   * cleared as they arrive, so each conversation notifies once.
-   */
-  replaces?: string;
 };
 
 /**
@@ -113,9 +107,10 @@ export const Inbox = {
       open: (domicile: Domicile, reading: InboxReading | undefined) => void;
       /**
        * The app window it opens in, if any, which the launcher lists: app
-       * `appId`'s, at `url`.
+       * `appId`'s, at `url`. With `pageNotifies`, its page notifies what the
+       * inbox notifies already, so the page's are cleared as they arrive.
        */
-      app?: { appId: string; url: string };
+      app?: { appId: string; url: string; pageNotifies?: boolean };
     },
   ) => ({ ...inbox, kind: InboxKind.Watched as const }),
   /**

@@ -58,9 +58,9 @@ export const useNotifications = (
   /** The senders `unread` leaves out, by `appName`, such as the inboxes'. */
   uncounted: readonly string[],
   /**
-   * The senders, by `appName`, whose notifications are cleared as they
-   * arrive, unshown, because another sends the same news: a site whose inbox
-   * notifies its mail.
+   * The browser windows whose pages' notifications are cleared as they
+   * arrive, unshown, because another sends the same news: an inbox's window,
+   * when the inbox notifies its mail itself.
    */
   replaced: readonly string[],
 ): NotificationCenter => {
@@ -78,7 +78,10 @@ export const useNotifications = (
   useEffect(() => {
     const heard = (sent: readonly Notification[]) => {
       const duplicates = sent
-        .filter(({ appName }) => replaced.includes(appName))
+        .filter(
+          ({ browserWindow }) =>
+            browserWindow !== undefined && replaced.includes(browserWindow),
+        )
         .map(({ id }) => id);
       if (duplicates.length > 0) {
         domicile.notifications.dismiss(duplicates);

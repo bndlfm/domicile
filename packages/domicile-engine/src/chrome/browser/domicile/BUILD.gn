@@ -84,6 +84,7 @@ source_set("domicile") {
     "//components/domicile:desk_downloads",
     # Where the pointer is on the desk, from aura's own events.
     "//components/domicile:desk_pointer",
+    "//components/domicile:notification_window",
     "//components/domicile:pointer_warp",
     "//components/domicile:shell_source",
     "//components/domicile:shell_window_wait",

@@ -45,6 +45,7 @@ TOGETHER=(
   guard-shell-local-network
   guard-webview-notifications
   guard-notification-server-late
+  guard-notification-window
   guard-shell-web-apis
   guard-display-capture
   guard-headless-desk

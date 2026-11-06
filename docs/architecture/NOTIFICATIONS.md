@@ -26,6 +26,7 @@ shell ─ dismissNotifications(ids) / invokeNotificationAction(id, key)
 | `notifications` attribute, `dismissNotifications()`, `invokeNotificationAction()`, `replyToNotification()` | `control_channel.mojom`, `modules/domicile/domicile_notification*`, patch 0067 |
 | Sites ask before they notify; the shell page is allowed; a notification that stays up is not marked critical | patch 0105, `guard-webview-notifications.sh`; for the shell page, `guard-shell-web-apis.sh` |
 | Chrome waits for the server, which starts after the engine | patch 0133, `guard-notification-server-late.sh` |
+| A page's notification names its browser window (`x-domicile-browser-window`) | patch 0172, `components/domicile/browser/notification_window.{h,cc}`, `guard-notification-window.sh` |
 | SDK: `DomicileNotification`, `notifications`, `dismissNotifications`, `invokeNotificationAction`, `replyToNotification`; `Notification` | `@domicile-desktop/sdk/domicile-host`, `@domicile-desktop/sdk/notification` |
 | `Toaster` component | `@domicile-desktop/component-library/Toaster` |
 | Manganese toasts, bell and drawer | `packages/manganese-notifications/src/` |
@@ -73,6 +74,12 @@ shell ─ dismissNotifications(ids) / invokeNotificationAction(id, key)
 - **`x-kde-origin-name` is advertised** so Chrome sends the page's origin as a
   hint. The origin becomes the notification's source, and Chrome's `settings`
   action is dropped.
+- **A page's notification names its browser window.** The engine sends the
+  window's id as `x-domicile-browser-window` (`browserWindow` in the SDK), so
+  the shell can tell a site's app window from its other pages. Manganese
+  clears what a Gmail inbox's window notifies, since the inbox notifies the
+  same mail. Absent for a worker's notification, the shell's own, and
+  anything not from a page.
 - **Clicking an action** runs it and closes the notification, unless the
   notification is `resident`.
 - **Inline reply.** The server advertises `inline-reply`. An `inline-reply`

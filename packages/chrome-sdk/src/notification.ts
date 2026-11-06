@@ -56,6 +56,11 @@ export type Notification = {
   timeoutMs: number | undefined;
   /** When it arrived or was last replaced, in milliseconds since the epoch. */
   time: number;
+  /**
+   * The id of the browser window whose page sent it, as `browserWindows`
+   * lists it, or `undefined` for anything else.
+   */
+  browserWindow: string | undefined;
 };
 
 /** The action key for a press on a {@link Notification.clickable} body. */
