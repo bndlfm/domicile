@@ -251,7 +251,8 @@ struct NotificationAction {
 // itself, which is `clickable`. `timeout_ms` is -1 where the sender left how
 // long it stays up to the shell, and 0 for until it is dismissed. `time` is
 // milliseconds since the epoch, on the compositor's clock -- a double because
-// a base::Value's whole numbers stop at two billion.
+// a base::Value's whole numbers stop at two billion. `browser_window` is the
+// id of the browser window whose page sent it, and empty for anything else.
 struct Notification {
   uint32 id;
   string app_name;
@@ -263,6 +264,7 @@ struct Notification {
   bool clickable;
   int32 timeout_ms;
   double time;
+  string browser_window;
 };
 
 // Page -> browser -> compositor.

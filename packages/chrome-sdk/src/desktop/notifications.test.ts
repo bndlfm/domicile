@@ -6,6 +6,7 @@ const sent = {
   actions: [{ key: "default", label: "Open" }],
   appName: "Mail",
   body: "Lunch?",
+  browserWindow: "7",
   clickable: true,
   icon: "data:image/png;base64,AA==",
   id: 7,
@@ -22,13 +23,23 @@ describe("notifications", () => {
     ).toBeUndefined();
   });
 
-  it("lists each notification, with undefined for no icon or no timeout", () => {
+  it("lists each notification, with undefined for no icon, timeout or browser window", () => {
     const fake = new FakeDomicileHost();
-    fake.set({ notifications: [sent, { ...sent, icon: "", timeoutMs: -1 }] });
+    fake.set({
+      notifications: [
+        sent,
+        { ...sent, browserWindow: "", icon: "", timeoutMs: -1 },
+      ],
+    });
 
     expect(desktop(fake.host).notifications.list).toStrictEqual([
       sent,
-      { ...sent, icon: undefined, timeoutMs: undefined },
+      {
+        ...sent,
+        browserWindow: undefined,
+        icon: undefined,
+        timeoutMs: undefined,
+      },
     ]);
   });
 

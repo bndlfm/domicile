@@ -17,7 +17,8 @@ DomicileNotification::DomicileNotification(
     HeapVector<Member<DomicileNotificationAction>> actions,
     bool clickable,
     int32_t timeout_ms,
-    double time)
+    double time,
+    const String& browser_window)
     : id_(id),
       app_name_(app_name),
       summary_(summary),
@@ -28,7 +29,8 @@ DomicileNotification::DomicileNotification(
           std::move(actions))),
       clickable_(clickable),
       timeout_ms_(timeout_ms),
-      time_(time) {}
+      time_(time),
+      browser_window_(browser_window) {}
 
 DomicileNotification::~DomicileNotification() = default;
 

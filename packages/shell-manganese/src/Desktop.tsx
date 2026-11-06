@@ -114,6 +114,7 @@ import { LevelNotice } from "./LevelNotice";
 import { launcherGlancesOf } from "./launcher-glances";
 import { pressMediaKey } from "./media-keys";
 import { options } from "./options";
+import { usePageDuplicates } from "./page-duplicates";
 import { Monitor } from "./screens/Monitor";
 import { NoScreens } from "./screens/NoScreens";
 import { showsSharing } from "./shows-sharing";
@@ -251,16 +252,14 @@ export const Desktop = ({
     () => inboxes.map(({ notifiesAs }) => notifiesAs),
     [inboxes],
   );
-  // Sites that notify what their inbox notifies already notify nothing.
-  const replacedSenders = useMemo(
-    () => inboxes.flatMap(({ replaces }) => replaces ?? []),
-    [inboxes],
-  );
+  // An inbox's window whose page notifies what the inbox notifies already
+  // notifies nothing.
+  const pageDuplicates = usePageDuplicates(domicile, inboxes);
   const notifications = useNotifications(
     domicile,
     toasts,
     inboxSenders,
-    replacedSenders,
+    pageDuplicates,
   );
   const { dismiss: dismissNotifications, read } = notifications;
   // What `notifications clear` dismisses, as the drawer's "Clear all" does.

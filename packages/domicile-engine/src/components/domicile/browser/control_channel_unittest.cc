@@ -145,7 +145,13 @@ class FakeClient : public mojom::ControlChannelClient {
              bool) override {}
   void Clipboard(std::vector<mojom::ClipboardEntryPtr>) override {}
   void Tray(std::vector<mojom::TrayItemPtr>) override {}
-  void Notifications(std::vector<mojom::NotificationPtr>) override {}
+  void Notifications(std::vector<mojom::NotificationPtr> items) override {
+    for (const auto& item : items) {
+      heard_.push_back(base::StringPrintf("notification %u from window '%s'",
+                                          item->id,
+                                          item->browser_window.c_str()));
+    }
+  }
   void ThemeChanged(mojom::Theme) override {}
   void WindowsThemeChanged(mojom::Theme) override {}
   void AppearanceChanged(const std::optional<std::string>&,
@@ -380,6 +386,27 @@ TEST_F(ControlChannelTest, AWindowsParentAndUrgencyReachThePage) {
             (std::vector<std::string>{"transient app-4 for app-2",
                                       "transient app-4 for ",
                                       "urgent app-2 true", "locked false"}));
+}
+
+// A notification names the browser window whose page sent it, and one the
+// compositor names none for is from none.
+TEST_F(ControlChannelTest, ANotificationsBrowserWindowReachesThePage) {
+  control_->SetClient(client_.BindRemote());
+  control_.FlushForTesting();
+  Say("{\"type\":\"notifications\",\"items\":["
+      "{\"id\":3,\"app_name\":\"mail.example.com\",\"summary\":\"Ada\","
+      "\"body\":\"Lunch?\",\"urgency\":\"normal\",\"actions\":[],"
+      "\"clickable\":true,\"time\":1,\"browser_window\":\"7\"},"
+      "{\"id\":4,\"app_name\":\"Slack\",\"summary\":\"Ada\","
+      "\"body\":\"Lunch?\",\"urgency\":\"normal\",\"actions\":[],"
+      "\"clickable\":true,\"time\":2}]}\n"
+      "{\"type\":\"locked\",\"locked\":false}\n");
+  EXPECT_TRUE(client_.locked_.Wait());
+
+  EXPECT_EQ(client_.heard_,
+            (std::vector<std::string>{"notification 3 from window '7'",
+                                      "notification 4 from window ''",
+                                      "locked false"}));
 }
 
 // A window's page anchor reaches the page, and a null one is no anchor, not

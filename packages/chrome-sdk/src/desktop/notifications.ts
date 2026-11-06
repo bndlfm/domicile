@@ -61,11 +61,15 @@ export const notifications = (host: NotificationsHost): Notifications => {
   };
 };
 
-/** The engine sends `""` for no icon and a negative timeout for none asked. */
+/**
+ * The engine sends `""` for no icon or browser window, and a negative timeout
+ * for none asked.
+ */
 const notificationOf = (item: DomicileNotification): Notification => ({
   actions: item.actions.map(({ key, label }) => ({ key, label })),
   appName: item.appName,
   body: item.body,
+  browserWindow: item.browserWindow === "" ? undefined : item.browserWindow,
   clickable: item.clickable,
   icon: item.icon === "" ? undefined : item.icon,
   id: item.id,

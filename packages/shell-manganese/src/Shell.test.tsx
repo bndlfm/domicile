@@ -341,6 +341,7 @@ const arrived = (id: number, summary: string) => ({
   actions: [],
   appName: "chat.example.com",
   body: "",
+  browserWindow: "",
   clickable: true,
   icon: "",
   id,

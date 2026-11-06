@@ -2415,6 +2415,10 @@ pub struct Notification {
     /// Arrival or last replacement time, in Unix milliseconds on the
     /// compositor's clock.
     pub time: u64,
+    /// The browser window whose page sent it, as the engine names it in
+    /// `x-domicile-browser-window`. Absent for anything else.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub browser_window: Option<String>,
 }
 
 /// One button of a [`Notification`].

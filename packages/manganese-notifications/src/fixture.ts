@@ -5,6 +5,7 @@ export const notification = (fields: Partial<Notification>): Notification => ({
   actions: [],
   appName: "Firefox",
   body: "",
+  browserWindow: undefined,
   clickable: false,
   icon: undefined,
   id: 1,

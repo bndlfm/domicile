@@ -1514,7 +1514,7 @@ void DomicileHost::Notifications(
     notifications.push_back(MakeGarbageCollected<DomicileNotification>(
         item->id, item->app_name, item->summary, item->body, item->icon,
         item->urgency, std::move(actions), item->clickable, item->timeout_ms,
-        item->time));
+        item->time, item->browser_window));
   }
   notifications_ = MakeGarbageCollected<FrozenArray<DomicileNotification>>(
       std::move(notifications));

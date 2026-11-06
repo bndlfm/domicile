@@ -98,6 +98,9 @@ pub struct Hints {
     pub origin_name: Option<String>,
     /// `desktop-entry`: the sender's desktop file id, without `.desktop`.
     pub desktop_entry: Option<String>,
+    /// `x-domicile-browser-window`: the browser window whose page sent a Web
+    /// Notification. The engine sends it.
+    pub browser_window: Option<String>,
 }
 
 /// Raw pixels, as the `image-data` hint sends them: rows of RGB or RGBA bytes,
@@ -329,6 +332,7 @@ impl Notifications {
             clickable: !default.is_empty(),
             timeout_ms: u32::try_from(notify.expire_timeout).ok(),
             time: now,
+            browser_window: notify.hints.browser_window,
         }
     }
 
@@ -557,6 +561,7 @@ mod tests {
                     clickable: false,
                     timeout_ms: None,
                     time: 20,
+                    browser_window: None,
                 }
             );
         }
@@ -710,6 +715,27 @@ mod tests {
             notifications.notify(from_the_browser(), 0);
 
             assert_eq!(notifications.items()[0].app_name, "chat.example.com");
+        }
+
+        #[test]
+        fn it_names_the_browser_window_its_page_is_in() {
+            let mut notifications = held(Vec::new());
+
+            notifications.notify(
+                Notify {
+                    hints: Hints {
+                        browser_window: Some("7".into()),
+                        ..from_the_browser().hints
+                    },
+                    ..from_the_browser()
+                },
+                0,
+            );
+
+            assert_eq!(
+                notifications.items()[0].browser_window.as_deref(),
+                Some("7")
+            );
         }
 
         #[test]

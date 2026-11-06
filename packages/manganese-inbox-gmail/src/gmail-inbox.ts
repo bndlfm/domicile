@@ -1,5 +1,4 @@
 import {
-  GMAIL_ORIGIN,
   gmailAppId,
   inboxAddress,
 } from "@domicile-desktop/manganese-bar-module-gmail/addresses";
@@ -44,7 +43,12 @@ export const gmailInbox = ({
 }: Options): Inbox =>
   Inbox.Watched({
     account: email,
-    app: { appId: gmailAppId(email), url: inboxAddress(email) },
+    // Gmail's page notifies the same mail while its window is open.
+    app: {
+      appId: gmailAppId(email),
+      pageNotifies: true,
+      url: inboxAddress(email),
+    },
     icon: EnvelopeSimpleIcon,
     ...(launcherName === undefined ? {} : { launcherName }),
     name: nickname,
@@ -62,8 +66,6 @@ export const gmailInbox = ({
     read: perDesktop((domicile) =>
       asReadings(deskInbox(domicile)(email, client, nickname).inbox),
     ),
-    // Gmail's page notifies the same mail while its window is open.
-    replaces: new URL(GMAIL_ORIGIN).host,
   });
 
 /** `watch`'s readings, as the drawer reads them. */

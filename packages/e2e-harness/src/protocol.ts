@@ -351,12 +351,14 @@ const traySchema = z.looseObject({
 // Clear with `dismiss_notifications`; press an action with
 // `invoke_notification_action`; send an `inline-reply` action's text with
 // `reply_to_notification`. `icon` is a `data:` URL. Without
-// `timeout_ms`, the shell picks the timeout. See
+// `timeout_ms`, the shell picks the timeout. `browser_window` names the
+// browser window whose page sent it. See
 // `docs/architecture/NOTIFICATIONS.md`.
 const notificationSchema = z.looseObject({
   actions: z.array(z.looseObject({ key: z.string(), label: z.string() })),
   app_name: z.string(),
   body: z.string(),
+  browser_window: z.string().optional(),
   clickable: z.boolean(),
   icon: z.string().optional(),
   id: z.number(),
