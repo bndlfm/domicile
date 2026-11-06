@@ -27,6 +27,7 @@ class DomicileContextMenuEvent;
 class DomicileDeviceRequestEvent;
 class DomicileDialogEvent;
 class DomicileExternalAppEvent;
+class DomicileSignInEvent;
 class DomicileFileChooserEvent;
 class DomicileMediaDevices;
 class DomicilePermissionRequestEvent;
@@ -189,6 +190,9 @@ class CORE_EXPORT HTMLWebViewElement final
 
   // Releases the external app request once answered. See `external_app_`.
   void ExternalAppAnswered(DomicileExternalAppEvent&);
+
+  // Releases the sign-in request once answered. See `sign_in_`.
+  void SignInAnswered(DomicileSignInEvent&);
 
   void Trace(Visitor*) const override;
 
@@ -368,6 +372,18 @@ class CORE_EXPORT HTMLWebViewElement final
                             bool may_remember,
                             ExternalAppRequestedCallback callback) override;
 
+  // Dispatches `domicile-sign-in`. If no listener calls `preventDefault()`,
+  // it is dismissed after dispatch. See domicile_sign_in_event.h.
+  void SignInRequested(const KURL& url,
+                       const String& realm,
+                       bool proxy,
+                       bool secure,
+                       SignInRequestedCallback callback) override;
+
+  // Dismisses the held sign-in request and dispatches
+  // `domicile-sign-in-withdrawn`, so the shell stops showing it.
+  void SignInWithdrawn() override;
+
   // Dispatches `domicile-will-navigate`; `preventDefault()` cancels. See
   // domicile_will_navigate_event.h.
   void WillNavigate(const KURL& url, WillNavigateCallback callback) override;
@@ -458,6 +474,10 @@ class CORE_EXPORT HTMLWebViewElement final
   // The external app request the shell has not answered, if any. A newer one
   // replaces it. Held for `waiting_choosers_`' reason.
   Member<DomicileExternalAppEvent> external_app_;
+
+  // The sign-in request the shell has not answered, if any. A newer one
+  // replaces it. Held for `waiting_choosers_`' reason.
+  Member<DomicileSignInEvent> sign_in_;
 
   // See sitePermissions().
   Vector<std::pair<String, String>> site_permissions_;

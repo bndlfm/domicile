@@ -1,0 +1,157 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: domicile CI <ci@domicile.invalid>
+Date: Fri, 6 Nov 2026 00:00:00 +0000
+Subject: [PATCH] domicile: a webview's sign-in asks the shell
+
+A site or a proxy can ask for a user name and password (HTTP
+authentication). Chrome asks with LoginHandlerViews, a dialog anchored
+to the outermost WebContents' window. For a <webview> guest that is the
+shell's own window, so Chrome's unstyled "Sign in" box was drawn over
+the desktop.
+
+//chrome/browser/domicile sets an override that makes a LoginHandler
+asking the guest's element instead (domicile_sign_in.h). This patch
+carries the parts in files Chromium owns:
+
+- `login_handler.{h,cc}`: SetCreateOverride and GetCreateOverride.
+- `login_handler_views.cc`: Create() makes the override's handler when
+  one is set.
+- `http_auth_coordinator.cc`: a subresource's sign-in no longer needs
+  the WebContents' modal dialog manager when the override is set, since
+  a guest has none and nothing is drawn on it.
+- Three lists, so that `DomicileSignInEvent`, the event a `<webview>`
+  dispatches for the shell to answer, is compiled and reaches the page,
+  as patch 0176 does for links for applications.
+
+Verified: not built. This repository cannot build Chromium; the engine
+job builds it on `crux`.
+---
+ chrome/browser/ui/login/http_auth_coordinator.cc    |  4 +++-
+ chrome/browser/ui/login/login_handler.cc            | 13 +++++++++++++
+ chrome/browser/ui/login/login_handler.h             | 10 ++++++++++
+ chrome/browser/ui/views/login_handler_views.cc      |  3 +++
+ .../blink/renderer/bindings/generated_in_core.gni   |  2 ++
+ third_party/blink/renderer/bindings/idl_in_core.gni |  1 +
+ third_party/blink/renderer/core/html/build.gni      |  2 ++
+ 7 files changed, 34 insertions(+), 1 deletion(-)
+
+diff --git a/chrome/browser/ui/login/http_auth_coordinator.cc b/chrome/browser/ui/login/http_auth_coordinator.cc
+index d443c8a..dc0e270 100644
+--- a/chrome/browser/ui/login/http_auth_coordinator.cc
++++ b/chrome/browser/ui/login/http_auth_coordinator.cc
+@@ -245,10 +245,12 @@ void HttpAuthCoordinator::Flow::ShowDialog() {
+   // If there is no WebContentsModalDialogManager, then a dialog cannot be
+   // shown.
+ #if !BUILDFLAG(IS_ANDROID)
++  // Domicile: a guest has no manager, and LoginHandler's override asks its
++  // element instead.
+   web_modal::WebContentsModalDialogManager* manager =
+       web_modal::WebContentsModalDialogManager::FromWebContents(
+           web_contents_.get());
+-  if (!manager) {
++  if (!manager && !LoginHandler::GetCreateOverride()) {
+     std::move(callback_).Run(std::nullopt);
+     return;
+   }
+diff --git a/chrome/browser/ui/login/login_handler.cc b/chrome/browser/ui/login/login_handler.cc
+index a78de6e..3c7777d 100644
+--- a/chrome/browser/ui/login/login_handler.cc
++++ b/chrome/browser/ui/login/login_handler.cc
+@@ -61,8 +61,21 @@ LoginHandlerVector& GetAllLoginHandlers() {
+   return *instance;
+ }
+ 
++// Domicile: see SetCreateOverride.
++LoginHandler::CreateOverride g_create_override = nullptr;
++
+ }  // namespace
+ 
++// static
++void LoginHandler::SetCreateOverride(CreateOverride create) {
++  g_create_override = create;
++}
++
++// static
++LoginHandler::CreateOverride LoginHandler::GetCreateOverride() {
++  return g_create_override;
++}
++
+ // ----------------------------------------------------------------------------
+ // LoginHandler
+ 
+diff --git a/chrome/browser/ui/login/login_handler.h b/chrome/browser/ui/login/login_handler.h
+index a34687b..80e6018 100644
+--- a/chrome/browser/ui/login/login_handler.h
++++ b/chrome/browser/ui/login/login_handler.h
+@@ -57,6 +57,16 @@ class LoginHandler : public content::LoginDelegate {
+       content::WebContents* web_contents,
+       content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback);
+ 
++  // Domicile: makes every handler `Create()` makes in place of Chrome's
++  // dialog, which is drawn on the outermost WebContents' window. Set once,
++  // before any is made. See //chrome/browser/domicile/domicile_sign_in.h.
++  using CreateOverride = std::unique_ptr<LoginHandler> (*)(
++      const net::AuthChallengeInfo& auth_info,
++      content::WebContents* web_contents,
++      content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback);
++  static void SetCreateOverride(CreateOverride create);
++  static CreateOverride GetCreateOverride();
++
+   // Call after `Create()` to show the dialog.
+   void ShowLoginPrompt(const GURL& request_url);
+ 
+diff --git a/chrome/browser/ui/views/login_handler_views.cc b/chrome/browser/ui/views/login_handler_views.cc
+index f3becfa..651aa4d 100644
+--- a/chrome/browser/ui/views/login_handler_views.cc
++++ b/chrome/browser/ui/views/login_handler_views.cc
+@@ -231,6 +231,9 @@ std::unique_ptr<LoginHandler> LoginHandler::Create(
+     const net::AuthChallengeInfo& auth_info,
+     content::WebContents* web_contents,
+     content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback) {
++  if (CreateOverride create = GetCreateOverride()) {
++    return create(auth_info, web_contents, std::move(auth_required_callback));
++  }
+   return std::make_unique<LoginHandlerViews>(auth_info, web_contents,
+                                              std::move(auth_required_callback));
+ }
+diff --git a/third_party/blink/renderer/bindings/generated_in_core.gni b/third_party/blink/renderer/bindings/generated_in_core.gni
+index e124c36..ee39ade 100644
+--- a/third_party/blink/renderer/bindings/generated_in_core.gni
++++ b/third_party/blink/renderer/bindings/generated_in_core.gni
+@@ -1226,6 +1226,8 @@ generated_interface_sources_in_core = [
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_domicile_will_navigate_event.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_domicile_external_app_event.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_domicile_external_app_event.h",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_domicile_sign_in_event.cc",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_domicile_sign_in_event.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_html_geolocation_element.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_html_geolocation_element.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_html_head_element.cc",
+diff --git a/third_party/blink/renderer/bindings/idl_in_core.gni b/third_party/blink/renderer/bindings/idl_in_core.gni
+index ea9420c..e16d9a8 100644
+--- a/third_party/blink/renderer/bindings/idl_in_core.gni
++++ b/third_party/blink/renderer/bindings/idl_in_core.gni
+@@ -470,6 +470,7 @@ static_idl_files_in_core = [
+   "//third_party/blink/renderer/core/html/domicile/domicile_media_devices.idl",
+   "//third_party/blink/renderer/core/html/domicile/domicile_will_navigate_event.idl",
+   "//third_party/blink/renderer/core/html/domicile/domicile_external_app_event.idl",
++  "//third_party/blink/renderer/core/html/domicile/domicile_sign_in_event.idl",
+   "//third_party/blink/renderer/core/html/html_geolocation_element.idl",
+   "//third_party/blink/renderer/core/html/html_head_element.idl",
+   "//third_party/blink/renderer/core/html/html_heading_element.idl",
+diff --git a/third_party/blink/renderer/core/html/build.gni b/third_party/blink/renderer/core/html/build.gni
+index 0c4aeb6..226be14 100644
+--- a/third_party/blink/renderer/core/html/build.gni
++++ b/third_party/blink/renderer/core/html/build.gni
+@@ -110,6 +110,8 @@ blink_core_sources_html = [
+   "domicile/domicile_will_navigate_event.h",
+   "domicile/domicile_external_app_event.cc",
+   "domicile/domicile_external_app_event.h",
++  "domicile/domicile_sign_in_event.cc",
++  "domicile/domicile_sign_in_event.h",
+   "domicile/html_app_element.cc",
+   "domicile/html_app_element.h",
+   "domicile/html_web_view_element.cc",
+-- 
+2.43.0
+

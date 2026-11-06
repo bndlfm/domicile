@@ -414,6 +414,25 @@ class WebViewGuest : public mojom::WebViewGuest,
                             bool may_remember,
                             ExternalAppAnswered answered);
 
+  // Asks the shell for a user name and password for `url`, the server or
+  // proxy that asked. See SignInRequested in the mojom and
+  // //chrome/browser/domicile/domicile_sign_in.h.
+  //
+  // `answered` gets the user name and password, or nullopt for cancel, which
+  // is also the answer if the shell ignored it or the element went away.
+  // Returns the request's number, for WithdrawSignIn.
+  using SignInAnswered = base::OnceCallback<void(
+      std::optional<std::pair<std::u16string, std::u16string>>)>;
+  int AskToSignIn(const GURL& url,
+                  const std::string& realm,
+                  bool proxy,
+                  bool secure,
+                  SignInAnswered answered);
+
+  // Tells the shell to stop asking for request `id`. Does nothing once it was
+  // answered or a newer request replaced it.
+  void WithdrawSignIn(int id);
+
   base::WeakPtr<WebViewGuest> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
@@ -1014,6 +1033,11 @@ class WebViewGuest : public mojom::WebViewGuest,
 
   // The page's open dialog. See RunJavaScriptDialog.
   GuestDialogs dialogs_;
+
+  // The last sign-in request's number, and the one the shell is asked now,
+  // or 0 for none. See AskToSignIn.
+  int last_sign_in_ = 0;
+  int open_sign_in_ = 0;
   // Whether AskToClose is waiting on the page's beforeunload.
   bool asked_to_close_ = false;
 

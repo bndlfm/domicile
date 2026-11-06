@@ -465,6 +465,24 @@ export const WEBVIEW_EXTERNAL_APP_EVENT = "domicile-external-app";
 export const WEBVIEW_EXTERNAL_APP_WITHDRAWN_EVENT =
   "domicile-external-app-withdrawn";
 
+/**
+ * Fired when a site or a proxy asks for a user name and password (HTTP
+ * authentication). The request waits until it is answered. Bubbles.
+ *
+ * The browser draws no dialog. Call `preventDefault()` to handle it, then
+ * answer with {@link DomicileSignInEvent.signIn} or
+ * {@link DomicileSignInEvent.dismiss}. If no listener calls
+ * `preventDefault()`, it is canceled and the page shows the site's refusal.
+ */
+export const WEBVIEW_SIGN_IN_EVENT = "domicile-sign-in";
+
+/**
+ * Fired when the browser drops the unanswered {@link WEBVIEW_SIGN_IN_EVENT},
+ * for example because the page navigated, or a newer one replaces it.
+ * Answering it afterward throws. Carries no payload. Bubbles.
+ */
+export const WEBVIEW_SIGN_IN_WITHDRAWN_EVENT = "domicile-sign-in-withdrawn";
+
 /** The dialogs a page can open, as {@link DomicileDialogEvent.dialogType}. */
 export const WEBVIEW_DIALOG_TYPES = [
   "alert",
@@ -895,6 +913,31 @@ declare global {
   }
 
   /**
+   * The {@link WEBVIEW_SIGN_IN_EVENT} event. The engine defines it in
+   * `domicile_sign_in_event.idl`.
+   */
+  interface DomicileSignInEvent extends Event {
+    /** The server or proxy that asked, such as `https://example.com/`. */
+    readonly url: string;
+    /**
+     * Its name for what is behind the sign-in, as the server sent it. May be
+     * `""`.
+     */
+    readonly realm: string;
+    /** Whether a proxy asked rather than the site. */
+    readonly proxy: boolean;
+    /** False when the password would cross the network unencrypted. */
+    readonly secure: boolean;
+    /**
+     * Send the user name and password. Answering twice, or after
+     * {@link WEBVIEW_SIGN_IN_WITHDRAWN_EVENT}, throws an `InvalidStateError`.
+     */
+    signIn(username: string, password: string): void;
+    /** Cancel. */
+    dismiss(): void;
+  }
+
+  /**
    * The {@link WEBVIEW_WILL_NAVIGATE_EVENT} event. The engine defines it in
    * `domicile_will_navigate_event.idl`.
    */
@@ -917,6 +960,7 @@ declare global {
     "domicile-device-request": DomicileDeviceRequestEvent;
     "domicile-dialog": DomicileDialogEvent;
     "domicile-external-app": DomicileExternalAppEvent;
+    "domicile-sign-in": DomicileSignInEvent;
     "domicile-will-navigate": DomicileWillNavigateEvent;
   }
 }
