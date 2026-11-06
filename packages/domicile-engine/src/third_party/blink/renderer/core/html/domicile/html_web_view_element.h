@@ -26,6 +26,7 @@ namespace blink {
 class DomicileContextMenuEvent;
 class DomicileDeviceRequestEvent;
 class DomicileDialogEvent;
+class DomicileExternalAppEvent;
 class DomicileFileChooserEvent;
 class DomicileMediaDevices;
 class DomicilePermissionRequestEvent;
@@ -185,6 +186,9 @@ class CORE_EXPORT HTMLWebViewElement final
 
   // Releases the dialog once answered. See `dialog_`.
   void DialogAnswered(DomicileDialogEvent&);
+
+  // Releases the external app request once answered. See `external_app_`.
+  void ExternalAppAnswered(DomicileExternalAppEvent&);
 
   void Trace(Visitor*) const override;
 
@@ -356,6 +360,14 @@ class CORE_EXPORT HTMLWebViewElement final
   // the shell stops showing it.
   void DialogWithdrawn() override;
 
+  // Dispatches `domicile-external-app`. If no listener calls
+  // `preventDefault()`, it is dismissed after dispatch. See
+  // domicile_external_app_event.h.
+  void ExternalAppRequested(const KURL& url,
+                            const KURL& origin,
+                            bool may_remember,
+                            ExternalAppRequestedCallback callback) override;
+
   // Dispatches `domicile-will-navigate`; `preventDefault()` cancels. See
   // domicile_will_navigate_event.h.
   void WillNavigate(const KURL& url, WillNavigateCallback callback) override;
@@ -442,6 +454,10 @@ class CORE_EXPORT HTMLWebViewElement final
   // The dialog the shell has not answered, if any. The browser sends one at a
   // time. Held for `waiting_choosers_`' reason.
   Member<DomicileDialogEvent> dialog_;
+
+  // The external app request the shell has not answered, if any. A newer one
+  // replaces it. Held for `waiting_choosers_`' reason.
+  Member<DomicileExternalAppEvent> external_app_;
 
   // See sitePermissions().
   Vector<std::pair<String, String>> site_permissions_;

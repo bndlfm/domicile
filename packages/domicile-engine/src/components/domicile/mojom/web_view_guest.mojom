@@ -489,6 +489,21 @@ interface WebViewGuestClient {
   // navigated or closed. Its answer, if one is sent, is ignored.
   DialogWithdrawn();
 
+  // The page opened a link for an application, such as zoommtg: or mailto:,
+  // that Chrome would ask about, so the shell must ask whether to open it.
+  // `origin` is the site that asked, or an empty URL for none. `may_remember` is
+  // whether the site may be let open these links without asking again: only
+  // a secure site may. See //chrome/browser/domicile/domicile_external_apps.h.
+  //
+  // `open` launches the default application for the link's scheme.
+  // `remember` lets the site open them without asking from then on; it is
+  // ignored unless `open`, and sending it without `may_remember` is a bad
+  // message. An unhandled event or a closed pipe opens nothing.
+  ExternalAppRequested(url.mojom.Url url,
+                       url.mojom.Url origin,
+                       bool may_remember)
+      => (bool open, bool remember);
+
   // The page entered or left fullscreen, as a video's fullscreen button does.
   // The page fills the element's box; the shell decides whether the element
   // fills the screen. Sent only when it changes; a fresh guest sends nothing.

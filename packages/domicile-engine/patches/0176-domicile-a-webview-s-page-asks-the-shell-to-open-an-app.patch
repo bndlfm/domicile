@@ -1,0 +1,137 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: domicile CI <ci@domicile.invalid>
+Date: Fri, 6 Nov 2026 00:00:00 +0000
+Subject: [PATCH] domicile: a webview's page asks the shell to open an app
+
+A link for an application, such as zoommtg: or slack:, asks before it
+launches. Chrome asks with ExternalProtocolDialog, a dialog anchored to
+the outermost WebContents' window. For a <webview> guest that is the
+shell's own window, so Chrome's unstyled "Open xdg-open?" dialog was
+drawn over the desktop.
+
+//chrome/browser/domicile sets an override that asks the guest's
+element instead (domicile_external_apps.h). This patch carries the
+parts in files Chromium owns:
+
+- `external_protocol_handler.{h,cc}`: SetDialogOverride, run in place
+  of the dialog before the outermost WebContents is taken, so the
+  override sees the guest. Chrome's block list and remembered choices
+  still decide whether to ask.
+- Three lists, so that `DomicileExternalAppEvent`, the event a
+  `<webview>` dispatches for the shell to answer, is compiled and
+  reaches the page, as patch 0114 does for dialogs.
+
+Verified: not built. This repository cannot build Chromium; the engine
+job builds it on `crux`.
+---
+ .../external_protocol_handler.cc                 | 16 ++++++++++++++++
+ .../external_protocol_handler.h                  | 11 +++++++++++
+ .../renderer/bindings/generated_in_core.gni      |  2 ++
+ .../blink/renderer/bindings/idl_in_core.gni      |  1 +
+ third_party/blink/renderer/core/html/build.gni   |  2 ++
+ 5 files changed, 32 insertions(+)
+
+diff --git a/chrome/browser/external_protocol/external_protocol_handler.cc b/chrome/browser/external_protocol/external_protocol_handler.cc
+index 289b835..69fbe69 100644
+--- a/chrome/browser/external_protocol/external_protocol_handler.cc
++++ b/chrome/browser/external_protocol/external_protocol_handler.cc
+@@ -68,6 +68,9 @@ bool g_accept_requests = true;
+ ExternalProtocolHandler::Delegate* g_external_protocol_handler_delegate =
+     nullptr;
+ 
++// DOMICILE: see ExternalProtocolHandler::SetDialogOverride.
++ExternalProtocolHandler::DialogOverride g_dialog_override = nullptr;
++
+ // Prefix for schemes that apps declare must not be launched by web content.
+ // See crbug.com/539667062.
+ constexpr std::string_view kLocalOnlySchemePrefix = "local+";
+@@ -261,6 +264,14 @@ void OnDefaultSchemeClientWorkerFinished(
+       return;
+     }
+ 
++    // DOMICILE: see ExternalProtocolHandler::SetDialogOverride. Before the
++    // outermost WebContents is taken, so the override sees the guest.
++    if (g_dialog_override && !delegate) {
++      g_dialog_override(escaped_url, web_contents, initiating_origin,
++                        std::move(initiator_document));
++      return;
++    }
++
+     // Anchor to the outermost WebContents, for e.g. embedded <webview>s.
+     web_contents = web_contents->GetOutermostWebContents();
+     CHECK(web_contents);
+@@ -386,6 +397,11 @@ void ExternalProtocolHandler::SetDelegateForTesting(Delegate* delegate) {
+   g_external_protocol_handler_delegate = delegate;
+ }
+ 
++// static
++void ExternalProtocolHandler::SetDialogOverride(DialogOverride ask) {
++  g_dialog_override = ask;
++}
++
+ bool ExternalProtocolHandler::MayRememberAllowDecisionsForThisOrigin(
+     const url::Origin* initiating_origin) {
+   return initiating_origin &&
+diff --git a/chrome/browser/external_protocol/external_protocol_handler.h b/chrome/browser/external_protocol/external_protocol_handler.h
+index 99921ca..f37d848 100644
+--- a/chrome/browser/external_protocol/external_protocol_handler.h
++++ b/chrome/browser/external_protocol/external_protocol_handler.h
+@@ -100,6 +100,17 @@ class ExternalProtocolHandler {
+   // ExternalProtocolHandler::Delegate for testing code.
+   static void SetDelegateForTesting(Delegate* delegate);
+ 
++  // DOMICILE: asks the shell in place of Chrome's dialog. Chrome's dialog
++  // anchors to the outermost WebContents, which for a <webview> guest is the
++  // shell's own window. Set once, before any page asks. See
++  // //chrome/browser/domicile/domicile_external_apps.h.
++  using DialogOverride =
++      void (*)(const GURL& url,
++               content::WebContents* web_contents,
++               const std::optional<url::Origin>& initiating_origin,
++               content::WeakDocumentPtr initiator_document);
++  static void SetDialogOverride(DialogOverride ask);
++
+   // True if |initiating_origin| is not nullptr and is considered
+   // potentially trustworthy.
+   static bool MayRememberAllowDecisionsForThisOrigin(
+diff --git a/third_party/blink/renderer/bindings/generated_in_core.gni b/third_party/blink/renderer/bindings/generated_in_core.gni
+index b5f4ec4..e124c36 100644
+--- a/third_party/blink/renderer/bindings/generated_in_core.gni
++++ b/third_party/blink/renderer/bindings/generated_in_core.gni
+@@ -1224,6 +1224,8 @@ generated_interface_sources_in_core = [
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_domicile_dialog_event.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_domicile_will_navigate_event.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_domicile_will_navigate_event.h",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_domicile_external_app_event.cc",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_domicile_external_app_event.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_html_geolocation_element.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_html_geolocation_element.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_html_head_element.cc",
+diff --git a/third_party/blink/renderer/bindings/idl_in_core.gni b/third_party/blink/renderer/bindings/idl_in_core.gni
+index 80874bd..ea9420c 100644
+--- a/third_party/blink/renderer/bindings/idl_in_core.gni
++++ b/third_party/blink/renderer/bindings/idl_in_core.gni
+@@ -469,6 +469,7 @@ static_idl_files_in_core = [
+   "//third_party/blink/renderer/core/html/domicile/domicile_media_device.idl",
+   "//third_party/blink/renderer/core/html/domicile/domicile_media_devices.idl",
+   "//third_party/blink/renderer/core/html/domicile/domicile_will_navigate_event.idl",
++  "//third_party/blink/renderer/core/html/domicile/domicile_external_app_event.idl",
+   "//third_party/blink/renderer/core/html/html_geolocation_element.idl",
+   "//third_party/blink/renderer/core/html/html_head_element.idl",
+   "//third_party/blink/renderer/core/html/html_heading_element.idl",
+diff --git a/third_party/blink/renderer/core/html/build.gni b/third_party/blink/renderer/core/html/build.gni
+index 6666cf7..0c4aeb6 100644
+--- a/third_party/blink/renderer/core/html/build.gni
++++ b/third_party/blink/renderer/core/html/build.gni
+@@ -108,6 +108,8 @@ blink_core_sources_html = [
+   "domicile/domicile_dialog_event.h",
+   "domicile/domicile_will_navigate_event.cc",
+   "domicile/domicile_will_navigate_event.h",
++  "domicile/domicile_external_app_event.cc",
++  "domicile/domicile_external_app_event.h",
+   "domicile/html_app_element.cc",
+   "domicile/html_app_element.h",
+   "domicile/html_web_view_element.cc",
+-- 
+2.43.0
+

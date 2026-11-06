@@ -14,6 +14,7 @@
 #include "chrome/browser/domicile/domicile_desk_functions.h"
 #include "chrome/browser/domicile/domicile_device_chooser.h"
 #include "chrome/browser/domicile/domicile_devtools.h"
+#include "chrome/browser/domicile/domicile_external_apps.h"
 #include "chrome/browser/domicile/domicile_permissions.h"
 #include "chrome/browser/domicile/domicile_printing.h"
 #include "chrome/browser/domicile/domicile_window_controller.h"
@@ -104,6 +105,8 @@ void StartDesk(Profile* profile) {
     UseChromeForGuestMedia();
     // WebHID, WebUSB and Web Serial choosers, drawn by the shell.
     UseTheShellForDeviceChoosers();
+    // Links for applications, asked about by the shell.
+    UseTheShellForExternalApps();
     return true;
   }();
   CHECK(installed);

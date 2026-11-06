@@ -1,7 +1,9 @@
 {
   "dependencies": {
+    "@cprussin/option-result": "catalog:",
     "@domicile-desktop/component-library": "workspace:*",
     "@domicile-desktop/sdk": "workspace:*",
+    "@domicile-desktop/system-apps": "workspace:*",
     "@pandacss/dev": "catalog:",
     "@phosphor-icons/react": "catalog:",
     "react": "catalog:",
@@ -26,12 +28,15 @@
   },
   "exports": {
     "./DeviceAsk": "./src/DeviceAsk.tsx",
+    "./ExternalAppAsk": "./src/ExternalAppAsk.tsx",
     "./PageDialog": "./src/PageDialog.tsx",
     "./PermissionAsk": "./src/PermissionAsk.tsx",
     "./permission-names": "./src/permission-names.tsx",
     "./site-permissions": "./src/site-permissions.ts",
     "./useDeviceRequest": "./src/useDeviceRequest.ts",
     "./useDialogRequest": "./src/useDialogRequest.ts",
+    "./useExternalAppRequest": "./src/useExternalAppRequest.ts",
+    "./useLinkOpener": "./src/useLinkOpener.ts",
     "./usePermissionRequest": "./src/usePermissionRequest.ts"
   },
   "files": [
