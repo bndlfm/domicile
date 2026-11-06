@@ -117,6 +117,17 @@ Patch `0110`:
   once. `window.close()` and `chrome.tabs.remove` close without asking.
 - Patch `0114` only lists the event's files for the build.
 
+## Links for applications
+
+- A link for an application (`zoommtg:`, `mailto:`) asks the shell
+  (`domicile-external-app`), not Chrome's dialog. Chrome's dialog anchors to
+  the outermost WebContents, which for a guest is the shell's own window.
+- Patch `0176` adds `ExternalProtocolHandler::SetDialogOverride`;
+  `chrome/browser/domicile/domicile_external_apps.h` sets it.
+- Chrome still decides whether to ask: blocked schemes open nothing, a
+  remembered site opens at once. "Always allow" is Chrome's, in the profile.
+- A page outside any guest opens nothing.
+
 ## Host shortcuts when nested
 
 Under a host compositor, the engine inhibits the host's shortcuts so the shell
@@ -166,5 +177,6 @@ The engine leaves out Chrome's own UI, which the shell replaces.
 - `guard-webview-dialog.sh` and `guard-webview-beforeunload.sh`: dialogs.
 - `guard-webview-partition.sh`: partitions.
 - `guard-webview-will-navigate.sh`: will-navigate.
+- `guard-webview-external-app.sh`: links for applications.
 - `guard-browser-brand.sh`: the Google Chrome brand.
 - No guard reads the browser's offers.

@@ -444,6 +444,27 @@ export const WEBVIEW_DIALOG_EVENT = "domicile-dialog";
  */
 export const WEBVIEW_DIALOG_WITHDRAWN_EVENT = "domicile-dialog-withdrawn";
 
+/**
+ * Fired when the page opens a link for an application, such as `zoommtg:` or
+ * `mailto:`, that the browser would ask about. Nothing opens until it is
+ * answered. Bubbles.
+ *
+ * The browser draws no dialog. Call `preventDefault()` to handle it, then
+ * answer with {@link DomicileExternalAppEvent.open} or
+ * {@link DomicileExternalAppEvent.dismiss}. If no listener calls
+ * `preventDefault()`, nothing opens. A site the user let open these links
+ * without asking, and a blocked scheme, fire nothing.
+ */
+export const WEBVIEW_EXTERNAL_APP_EVENT = "domicile-external-app";
+
+/**
+ * Fired when a newer {@link WEBVIEW_EXTERNAL_APP_EVENT} replaces the one still
+ * unanswered, which then opens nothing. Answering it afterward throws. Carries
+ * no payload. Bubbles.
+ */
+export const WEBVIEW_EXTERNAL_APP_WITHDRAWN_EVENT =
+  "domicile-external-app-withdrawn";
+
 /** The dialogs a page can open, as {@link DomicileDialogEvent.dialogType}. */
 export const WEBVIEW_DIALOG_TYPES = [
   "alert",
@@ -848,6 +869,32 @@ declare global {
   }
 
   /**
+   * The {@link WEBVIEW_EXTERNAL_APP_EVENT} event. The engine defines it in
+   * `domicile_external_app_event.idl`.
+   */
+  interface DomicileExternalAppEvent extends Event {
+    /** The link, such as `zoommtg://zoom.us/join?confno=1`. */
+    readonly url: string;
+    /** The site that opened it, such as `https://zoom.us`, or `""` for none. */
+    readonly origin: string;
+    /**
+     * Whether {@link DomicileExternalAppEvent.open} may remember the choice.
+     * Only a secure site may.
+     */
+    readonly mayRemember: boolean;
+    /**
+     * Open the link in its scheme's default application. With `remember` and
+     * {@link DomicileExternalAppEvent.mayRemember}, the site opens these links
+     * without asking from then on. Answering twice, or after
+     * {@link WEBVIEW_EXTERNAL_APP_WITHDRAWN_EVENT}, throws an
+     * `InvalidStateError`.
+     */
+    open(remember?: boolean): void;
+    /** Open nothing. */
+    dismiss(): void;
+  }
+
+  /**
    * The {@link WEBVIEW_WILL_NAVIGATE_EVENT} event. The engine defines it in
    * `domicile_will_navigate_event.idl`.
    */
@@ -869,6 +916,7 @@ declare global {
     "domicile-permission-request": DomicilePermissionRequestEvent;
     "domicile-device-request": DomicileDeviceRequestEvent;
     "domicile-dialog": DomicileDialogEvent;
+    "domicile-external-app": DomicileExternalAppEvent;
     "domicile-will-navigate": DomicileWillNavigateEvent;
   }
 }

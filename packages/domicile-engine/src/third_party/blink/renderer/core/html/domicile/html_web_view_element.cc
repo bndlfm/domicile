@@ -28,6 +28,7 @@
 #include "third_party/blink/renderer/core/html/domicile/domicile_context_menu_event.h"
 #include "third_party/blink/renderer/core/html/domicile/domicile_device_request_event.h"
 #include "third_party/blink/renderer/core/html/domicile/domicile_dialog_event.h"
+#include "third_party/blink/renderer/core/html/domicile/domicile_external_app_event.h"
 #include "third_party/blink/renderer/core/html/domicile/domicile_file_chooser_event.h"
 #include "third_party/blink/renderer/core/html/domicile/domicile_permission_request_event.h"
 #include "third_party/blink/renderer/core/html/domicile/domicile_will_navigate_event.h"
@@ -122,6 +123,11 @@ constexpr char kDeviceRequestWithdrawnEvent[] =
 // the event, and its withdrawal. See domicile_dialog_event.h.
 constexpr char kDialogEvent[] = "domicile-dialog";
 constexpr char kDialogWithdrawnEvent[] = "domicile-dialog-withdrawn";
+
+// A link for an application the shell answers on the event, and its
+// withdrawal. See domicile_external_app_event.h.
+constexpr char kExternalAppEvent[] = "domicile-external-app";
+constexpr char kExternalAppWithdrawnEvent[] = "domicile-external-app-withdrawn";
 
 // The values of a site permission's setting. Strings, as for `security`.
 constexpr char kSettingAsk[] = "ask";
@@ -270,6 +276,7 @@ void HTMLWebViewElement::Trace(Visitor* visitor) const {
   visitor->Trace(permission_request_);
   visitor->Trace(device_request_);
   visitor->Trace(dialog_);
+  visitor->Trace(external_app_);
   visitor->Trace(pointer_listener_);
   HTMLFrameElementBase::Trace(visitor);
 }
@@ -983,6 +990,36 @@ void HTMLWebViewElement::WillNavigate(const KURL& url,
       AtomicString(kWillNavigateEvent), url.GetString());
   DispatchEvent(*event);
   std::move(callback).Run(!event->defaultPrevented());
+}
+
+// Held in `external_app_` until answered. A newer request replaces an older
+// one, which opens nothing and is withdrawn from the shell first.
+void HTMLWebViewElement::ExternalAppRequested(
+    const KURL& url,
+    const KURL& origin,
+    bool may_remember,
+    ExternalAppRequestedCallback callback) {
+  if (external_app_) {
+    external_app_->DismissIfUnanswered();
+    DispatchEvent(
+        *Event::CreateBubble(AtomicString(kExternalAppWithdrawnEvent)));
+  }
+  auto* event = MakeGarbageCollected<DomicileExternalAppEvent>(
+      AtomicString(kExternalAppEvent), url.GetString(),
+      origin.IsValid() ? SecurityOrigin::Create(origin)->ToString()
+                       : g_empty_string,
+      may_remember, std::move(callback), *this);
+  external_app_ = event;
+  DispatchEvent(*event);
+  if (!event->defaultPrevented()) {
+    event->DismissIfUnanswered();
+  }
+}
+
+void HTMLWebViewElement::ExternalAppAnswered(DomicileExternalAppEvent& event) {
+  if (external_app_ == &event) {
+    external_app_ = nullptr;
+  }
 }
 
 void HTMLWebViewElement::DialogAnswered(DomicileDialogEvent& event) {

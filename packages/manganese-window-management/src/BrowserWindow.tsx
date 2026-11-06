@@ -3,9 +3,12 @@
 import { FilePicker } from "@domicile-desktop/component-library/FilePicker";
 import { desktopFolders } from "@domicile-desktop/component-library/folders";
 import { DeviceAsk } from "@domicile-desktop/manganese-page-requests/DeviceAsk";
+import { ExternalAppAsk } from "@domicile-desktop/manganese-page-requests/ExternalAppAsk";
 import { PageDialog } from "@domicile-desktop/manganese-page-requests/PageDialog";
 import { useDeviceRequest } from "@domicile-desktop/manganese-page-requests/useDeviceRequest";
 import { useDialogRequest } from "@domicile-desktop/manganese-page-requests/useDialogRequest";
+import { useExternalAppRequest } from "@domicile-desktop/manganese-page-requests/useExternalAppRequest";
+import { useLinkOpener } from "@domicile-desktop/manganese-page-requests/useLinkOpener";
 import { usePermissionRequest } from "@domicile-desktop/manganese-page-requests/usePermissionRequest";
 import type { Domicile } from "@domicile-desktop/sdk/desktop/desktop";
 import {
@@ -320,6 +323,11 @@ export const BrowserWindow = ({
   // paused on, and the element in it to focus. The engine draws no dialog.
   const dialogRequest = useDialogRequest(view);
   const [dialogBox, setDialogBox] = useState<HTMLElement | null>(null);
+  // The link for an application the page opened, the application that opens
+  // it, and the button to focus. The engine draws no dialog.
+  const externalApp = useExternalAppRequest(view);
+  const linkOpener = useLinkOpener(domicile, externalApp?.url);
+  const [appAskBox, setAppAskBox] = useState<HTMLElement | null>(null);
 
   // Focuses an element in this window without reporting it as a user reach.
   // All programmatic focus here must go through this.
@@ -497,20 +505,28 @@ export const BrowserWindow = ({
   useEffect(() => {
     if (holdsKeyboard && view !== null) {
       domicile.windows.focusShell();
-      const waiting = pickerBox ?? dialogBox;
+      const waiting = pickerBox ?? dialogBox ?? appAskBox;
       if (waiting !== null) {
         focusOwn(waiting);
       } else if (!holdsFocus(element.current)) {
         focusOwn(view);
       }
     }
-  }, [dialogBox, domicile, focusOwn, holdsKeyboard, pickerBox, view]);
+  }, [
+    appAskBox,
+    dialogBox,
+    domicile,
+    focusOwn,
+    holdsKeyboard,
+    pickerBox,
+    view,
+  ]);
 
   // Takes the keyboard back for the file picker or the page's dialog when the
   // waiting page takes focus. The PDF viewer refocuses its own button after
   // asking where to save, and the keys would follow it into the page.
   useEffect(() => {
-    const waiting = pickerBox ?? dialogBox;
+    const waiting = pickerBox ?? dialogBox ?? appAskBox;
     if (view === null || waiting === null) {
       return undefined;
     } else {
@@ -522,7 +538,7 @@ export const BrowserWindow = ({
         view.removeEventListener(WEBVIEW_GUEST_FOCUS_EVENT, reclaim);
       };
     }
-  }, [dialogBox, focusOwn, pickerBox, view]);
+  }, [appAskBox, dialogBox, focusOwn, pickerBox, view]);
 
   // Releases focus when the window loses it. The engine forwards keys from this
   // document to clients, but keys sent to a focused guest never reach the
@@ -784,6 +800,15 @@ export const BrowserWindow = ({
           {dialogRequest !== undefined && (
             <PageDialog ref={setDialogBox} request={dialogRequest} />
           )}
+          {dialogRequest === undefined &&
+            externalApp !== undefined &&
+            linkOpener !== undefined && (
+              <ExternalAppAsk
+                app={linkOpener}
+                ref={setAppAskBox}
+                request={externalApp}
+              />
+            )}
           {asking !== undefined && (
             <FilePicker
               // A new picker per request, so each starts empty.
