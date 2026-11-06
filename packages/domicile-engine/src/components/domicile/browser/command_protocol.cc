@@ -49,11 +49,6 @@ constexpr char kSiteData[] = "site_data";
 constexpr char kClearSiteData[] = "clear_site_data";
 constexpr char kDisableWhileTyping[] = "disable_while_typing";
 
-// Matched whole by domicile-launch (`NO_SHELL_WINDOW` in command.rs), which
-// asks again on it.
-constexpr char kNoShellWindow[] =
-    "this engine has no shell window to load a shell into";
-
 std::string Line(base::DictValue reply) {
   std::string line;
   // Replies hold only strings, finite numbers, booleans, lists and objects,
@@ -312,13 +307,15 @@ void AnswerLoadShell(const base::DictValue& request,
   }
 
   // The root and module are not checked here. `domicile load-shell` validates
-  // the path first (`shell_path` in domicile-launch), and the shell document
-  // shows an error if the module fails to load.
+  // the path first (`shell_path` in domicile-launch), and a module that fails
+  // to run is refused once the page says so.
   load_shell(shell_root, *module,
              base::BindOnce(
-                 [](CommandReply reply, bool loaded) {
-                   std::move(reply).Run(loaded ? Done("loaded")
-                                               : RefusedCommand(kNoShellWindow));
+                 [](CommandReply reply,
+                    base::expected<void, std::string> loaded) {
+                   std::move(reply).Run(loaded.has_value()
+                                            ? Done("loaded")
+                                            : RefusedCommand(loaded.error()));
                  },
                  std::move(reply)));
 }

@@ -36,6 +36,11 @@ std::string ShellSource::Module() const {
 void ShellSource::Set(const base::FilePath& root, const std::string& module) {
   root_ = root;
   module_ = module;
+  ++serial_;
+}
+
+uint64_t ShellSource::Serial() const {
+  return serial_;
 }
 
 }  // namespace domicile

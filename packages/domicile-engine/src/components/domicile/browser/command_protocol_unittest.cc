@@ -155,7 +155,11 @@ std::string Answer(std::string_view line,
       told->held_load = std::move(loaded);
       return;
     }
-    std::move(loaded).Run(has_window);
+    if (has_window) {
+      std::move(loaded).Run(base::ok());
+    } else {
+      std::move(loaded).Run(base::unexpected(kNoShellWindow));
+    }
   };
   auto run_app = [told, has_window](const base::FilePath& root,
                                     const std::string& module,
@@ -527,8 +531,20 @@ TEST(CommandProtocolTest, AnswersALoadOnceTheShellWindowCanTakeIt) {
   told.hold_load = true;
   EXPECT_EQ(Answer(kLoadOther, &told), "");
 
-  std::move(told.held_load).Run(true);
+  std::move(told.held_load).Run(base::ok());
   EXPECT_EQ(TypeOf(told.reply), "loaded");
+}
+
+TEST(CommandProtocolTest, RefusesALoadWhoseShellDidNotRun) {
+  // The engine went back to the old shell; the supervisor keeps serving it.
+  Told told;
+  told.hold_load = true;
+  Answer(kLoadOther, &told);
+
+  std::move(told.held_load)
+      .Run(base::unexpected("the shell's Shell threw: TypeError"));
+  EXPECT_EQ(TypeOf(told.reply), "refused");
+  EXPECT_EQ(WhyOf(told.reply), "the shell's Shell threw: TypeError");
 }
 
 TEST(CommandProtocolTest, IgnoresFieldsItDoesNotKnow) {

@@ -4,6 +4,7 @@
 #ifndef COMPONENTS_DOMICILE_BROWSER_SHELL_SOURCE_H_
 #define COMPONENTS_DOMICILE_BROWSER_SHELL_SOURCE_H_
 
+#include <cstdint>
 #include <string>
 
 #include "base/files/file_path.h"
@@ -46,9 +47,15 @@ class ShellSource {
   // root. Takes effect on the next navigation or reload of the shell's window.
   void Set(const base::FilePath& root, const std::string& module);
 
+  // Counts each Set, so a shell document can be told apart from one served
+  // before the last Set. The document names it, and its page reports it back
+  // to ShellSwap.
+  uint64_t Serial() const;
+
  private:
   base::FilePath root_;
   std::string module_;
+  uint64_t serial_ = 0;
 };
 
 }  // namespace domicile

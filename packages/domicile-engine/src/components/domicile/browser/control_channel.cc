@@ -22,6 +22,7 @@
 #include "base/values.h"
 #include "components/domicile/browser/desk_lock.h"
 #include "components/domicile/browser/portal_request.h"
+#include "components/domicile/browser/shell_swap.h"
 #include "components/domicile/browser/system_call.h"
 #include "components/domicile/common/cursor_shape.h"
 #include "components/domicile/common/display_transform.h"
@@ -531,6 +532,17 @@ void ControlChannel::WarpPointer(double x,
                                  double y,
                                  const std::optional<gfx::RectF>& unless_over) {
   warp_sink_.Run(x, y, unless_over);
+}
+
+// Nothing is sent, for WarpPointer's reason: the compositor does not swap
+// shells. What the page says goes to the `load_shell` waiting on it.
+void ControlChannel::ShellRan(const std::string& serial) {
+  ShellReports::Get().Heard(serial, std::nullopt);
+}
+
+void ControlChannel::ShellFailed(const std::string& serial,
+                                 const std::string& why) {
+  ShellReports::Get().Heard(serial, why);
 }
 
 void ControlChannel::CloseApp(const std::string& app_id) {

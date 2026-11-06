@@ -336,6 +336,22 @@ source_set("shell_source") {
   ]
 }
 
+# Swaps the shell for `load_shell` and puts the old one back when the new one
+# does not run, and relays what the shell's page says of its module from the
+# control channel. Its own target so both are tested without a window: the
+# command socket hands it a way to load the window, and this needs only //base.
+source_set("shell_swap") {
+  sources = [
+    "browser/shell_swap.cc",
+    "browser/shell_swap.h",
+  ]
+
+  public_deps = [
+    ":shell_source",
+    "//base",
+  ]
+}
+
 # The app modules the browser serves, by host. See
 # docs/architecture/APP-MODULES.md.
 #
@@ -1028,6 +1044,7 @@ source_set("control_channel") {
     ":extension_installer",
     ":line_framer",
     ":portal_request",
+    ":shell_swap",
     ":shortcut_registry",
     ":system_call",
     ":theme",
@@ -1091,6 +1108,7 @@ source_set("unit_tests") {
     "browser/shell_fetch_unittest.cc",
     "browser/shell_origin_unittest.cc",
     "browser/shell_death_unittest.cc",
+    "browser/shell_swap_unittest.cc",
     "browser/shell_window_wait_unittest.cc",
     "browser/shell_windows_unittest.cc",
     "browser/shortcut_registry_unittest.cc",
@@ -1166,6 +1184,7 @@ source_set("unit_tests") {
     ":shell_death",
     ":shell_scheme",
     ":shell_source",
+    ":shell_swap",
     ":shell_window_wait",
     ":shell_windows",
     ":shortcut_registry",

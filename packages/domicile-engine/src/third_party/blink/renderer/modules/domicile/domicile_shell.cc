@@ -38,6 +38,10 @@ namespace {
 // ShellURLLoaderFactory::ShellDocument, which writes it.
 constexpr char kModuleMetaName[] = "domicile-shell-module";
 
+// And the ShellSource serial it was served for, which goes back to the
+// browser with whether the module ran.
+constexpr char kSerialMetaName[] = "domicile-shell-serial";
+
 // What runs the shell, as JavaScript: a function of the module's URL, the
 // host, the desktop layer and `drawn`, evaluated without binding it to any
 // name -- see DomicileShell. The layer makes the host the typed `Domicile`
@@ -48,8 +52,9 @@ constexpr char kModuleMetaName[] = "domicile-shell-module";
 // and the layer over it is the SDK's to test.
 //
 // It calls `drawn` however it ends: once `Shell` returns, or once it has said
-// why the shell did not run. The document draws nothing until then, and the
-// report has to show.
+// why the shell did not run, with what it said. The document draws nothing
+// until then, and the report has to show. The browser hears which, so a
+// `domicile load-shell` can put the old shell back (ShellSwap).
 //
 // AND IT REPORTS ITS OWN SHELL FAILING. A module that 404s, will not parse,
 // throws on its first line, has no `Shell`, or whose `Shell` throws, would
@@ -64,7 +69,9 @@ constexpr char kModuleMetaName[] = "domicile-shell-module";
 // report painted over a working desktop would be worse than the blank window
 // this exists to replace.
 constexpr char kRunShell[] = R"js((async (module, host, layer, drawn) => {
+  let failure;
   const say = (what) => {
+    failure = what;
     console.error("domicile: " + what);
     const said = document.createElement("pre");
     said.textContent = "domicile: " + what;
@@ -110,7 +117,7 @@ constexpr char kRunShell[] = R"js((async (module, host, layer, drawn) => {
         "with the element to draw in and the desktop.");
     }
   } finally {
-    drawn();
+    drawn(failure);
   }
 }))js";
 
@@ -125,13 +132,22 @@ class DocumentParsed final : public NativeEventListener {
   const base::RepeatingClosure run_;
 };
 
-// Lets the shell's document draw: `drawn` in kRunShell.
+// Lets the shell's document draw, and tells the browser whether the shell
+// ran: `drawn` in kRunShell, with why it did not or undefined.
 class ShellDrawn final : public ScriptFunction {
  public:
   explicit ShellDrawn(DomicileShell& shell) : shell_(shell) {}
 
-  ScriptValue Call(ScriptState*, ScriptValue) override {
+  ScriptValue Call(ScriptState* script_state, ScriptValue failure) override {
     shell_->LetTheDocumentDraw();
+    const v8::Local<v8::Value> why = failure.V8Value();
+    if (why->IsString()) {
+      shell_->Desktop().ReportShellFailed(
+          shell_->Serial(),
+          ToCoreString(script_state->GetIsolate(), why.As<v8::String>()));
+    } else {
+      shell_->Desktop().ReportShellRan(shell_->Serial());
+    }
     return ScriptValue();
   }
 
@@ -144,16 +160,23 @@ class ShellDrawn final : public ScriptFunction {
   const Member<DomicileShell> shell_;
 };
 
+// The content of the document's meta element named `name`, or a null String
+// for a document with none.
+String MetaContent(Document& document, const char* name) {
+  for (HTMLMetaElement& meta :
+       Traversal<HTMLMetaElement>::DescendantsOf(document)) {
+    if (meta.GetName() == name) {
+      return meta.Content();
+    }
+  }
+  return String();
+}
+
 // The module the document names, resolved against it, or an empty URL for a
 // document that names none.
 KURL ModuleOf(Document& document) {
-  for (HTMLMetaElement& meta :
-       Traversal<HTMLMetaElement>::DescendantsOf(document)) {
-    if (meta.GetName() == kModuleMetaName) {
-      return document.CompleteURL(meta.Content());
-    }
-  }
-  return KURL();
+  const String module = MetaContent(document, kModuleMetaName);
+  return module.IsNull() ? KURL() : document.CompleteURL(module);
 }
 
 }  // namespace
@@ -204,12 +227,27 @@ void DomicileShell::LetTheDocumentDraw() {
       ->RemovePendingDomicileShell();
 }
 
+const String& DomicileShell::Serial() const {
+  return serial_;
+}
+
+DomicileHost& DomicileShell::Desktop() const {
+  CHECK(desktop_);
+  return *desktop_;
+}
+
 void DomicileShell::Run() {
   LocalDOMWindow* window = GetSupplementable();
   Document* document = window->document();
   document->removeEventListener(event_type_names::kDOMContentLoaded,
                                 parsed_listener_.Get(), /*use_capture=*/false);
   const KURL module = ModuleOf(*document);
+  // Empty, never null, for a page with no serial: the mojom string is not
+  // nullable, and no swap waits on such a page.
+  serial_ = MetaContent(*document, kSerialMetaName);
+  if (serial_.IsNull()) {
+    serial_ = g_empty_string;
+  }
   if (!module.IsValid() || !window->GetFrame()) {
     LetTheDocumentDraw();
     return;

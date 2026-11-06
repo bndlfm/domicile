@@ -425,6 +425,16 @@ interface ControlChannel {
   // this process can. See `PointerAlreadyOver`.
   WarpPointer(double x, double y, gfx.mojom.RectF? unless_over);
 
+  // The shell's module ran: its `Shell` returned. Or it did not, and `why` is
+  // what the page's error screen says. `serial` is the ShellSource serial the
+  // document names, so the browser hears only the page it served. Sent once
+  // per shell document, by DomicileShell rather than by the shell. Stops in
+  // the browser process, where a `domicile load-shell` waits to hear it and
+  // puts the old shell back on a failure. See
+  // components/domicile/browser/shell_swap.h.
+  ShellRan(string serial);
+  ShellFailed(string serial, string why);
+
   // Input forwarding. Coordinates are surface-local and keycodes are evdev,
   // because that is what a Wayland client expects to be handed.
   Key(string app_id, uint32 keycode, bool pressed);

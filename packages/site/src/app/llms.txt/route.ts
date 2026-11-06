@@ -39,7 +39,7 @@ const Desktop = () => {
 export const Shell = mount(Desktop);
 \`\`\`
 
-- Run it with \`domicile ./shell.tsx\`. After each change, \`domicile load-shell ./shell.tsx\` swaps it in place: windows stay open, and a build that fails keeps the running shell.
+- Run it with \`domicile ./shell.tsx\`. After each change, \`domicile load-shell ./shell.tsx\` swaps it in place: windows stay open, and a shell that fails to build or run keeps the running shell.
 - \`domicile\` only transpiles and bundles the file. \`@domicile-desktop/*\` and React come from Domicile; any other import is installed from npm into the nearest \`package.json\`.
 - Nothing needs a build step: \`import "@tailwindcss/browser";\` is Tailwind compiled in the page, as a plain npm package. For a desktop you keep, bundle it yourself (your own Vite, Tailwind config and plugins) and run \`domicile ./dist/shell.js\`.
 - React ignores \`on…\` props on \`<app>\`. Put handlers on an element around it, such as a title bar.

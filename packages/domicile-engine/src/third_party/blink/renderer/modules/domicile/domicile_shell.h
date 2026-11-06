@@ -8,6 +8,7 @@
 #include "third_party/blink/renderer/modules/modules_export.h"
 #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
 #include "third_party/blink/renderer/platform/supplementable.h"
+#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
 
 namespace blink {
 
@@ -52,6 +53,12 @@ class MODULES_EXPORT DomicileShell final
   // Lets the document draw. Called once the shell has run or failed to.
   void LetTheDocumentDraw();
 
+  // The desktop the shell was handed. Only once it runs.
+  DomicileHost& Desktop() const;
+
+  // The ShellSource serial the document names. Null before it runs.
+  const String& Serial() const;
+
  private:
   // The document is parsed: find the module it names and run it.
   void Run();
@@ -59,6 +66,7 @@ class MODULES_EXPORT DomicileShell final
   Member<NativeEventListener> parsed_listener_;
   // The desktop the shell was handed. Null until it runs.
   Member<DomicileHost> desktop_;
+  String serial_;
 };
 
 }  // namespace blink

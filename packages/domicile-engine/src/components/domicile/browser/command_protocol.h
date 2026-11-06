@@ -138,13 +138,20 @@ namespace domicile {
 // refuses the request and names both versions.
 inline constexpr int kCommandVersion = 1;
 
-// Runs once with whether `load_shell` loaded the shell: false if there is no
-// shell window to load it into.
-using ShellLoaded = base::OnceCallback<void(bool loaded)>;
+// Why `load_shell` loaded nothing while the shell window's first page has not
+// committed. Matched whole by domicile-launch (`NO_SHELL_WINDOW` in
+// command.rs), which asks again on it.
+inline constexpr char kNoShellWindow[] =
+    "this engine has no shell window to load a shell into";
+
+// Runs once when `load_shell` loaded the shell, or with why it did not:
+// kNoShellWindow, or why the new shell did not run (see ShellSwap).
+using ShellLoaded =
+    base::OnceCallback<void(base::expected<void, std::string> loaded)>;
 
 // Carries out `load_shell`: serves this shell and shows it. Runs `loaded`
 // once, possibly after returning, as the shell window's first page may still
-// be loading.
+// be loading and the new shell has yet to run.
 using LoadShell = base::FunctionRef<void(const base::FilePath& root,
                                          const std::string& module,
                                          ShellLoaded loaded)>;

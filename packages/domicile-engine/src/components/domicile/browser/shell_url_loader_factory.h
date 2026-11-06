@@ -4,6 +4,7 @@
 #ifndef COMPONENTS_DOMICILE_BROWSER_SHELL_URL_LOADER_FACTORY_H_
 #define COMPONENTS_DOMICILE_BROWSER_SHELL_URL_LOADER_FACTORY_H_
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -48,8 +49,9 @@ class ShellURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
   ShellURLLoaderFactory(const ShellURLLoaderFactory&) = delete;
   ShellURLLoaderFactory& operator=(const ShellURLLoaderFactory&) = delete;
 
-  // The HTML document that loads the shell's `module`. Exposed for testing.
-  static std::string ShellDocument(const std::string& module);
+  // The HTML document that loads the shell's `module`, served for ShellSource
+  // serial `serial`. Exposed for testing.
+  static std::string ShellDocument(const std::string& module, uint64_t serial);
 
   // The response head ShellDocument is served with. Exposed for testing.
   static network::mojom::URLResponseHeadPtr ShellDocumentHead();

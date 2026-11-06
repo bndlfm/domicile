@@ -74,6 +74,12 @@ use domicile_protocol::Theme;
 /// machine takes seconds.
 const PATIENCE: Duration = Duration::from_secs(30);
 
+/// How long the supervisor waits for the engine to answer `load_shell`. The
+/// engine waits for its shell window's first page, then for the new shell to
+/// say whether it ran (`kShellRunsWithin` in domicile_command_socket.cc), so
+/// a shell that did not run is refused rather than timed out.
+const LOAD_WITHIN: Duration = Duration::from_secs(10);
+
 /// How long a screenshot may take: the compositor reads back every monitor
 /// and encodes a PNG, which for several 4K monitors takes seconds.
 const CAPTURE_WITHIN: Duration = Duration::from_secs(10);
@@ -488,6 +494,9 @@ fn asked(request: &Request) -> Result<ExitCode, String> {
         Request::Screenshot { file: None } => None,
         // The user stops it, however long that takes.
         Request::ScreenRecord => None,
+        // Longer than the supervisor waits for the engine, so why a shell
+        // did not run reaches this terminal rather than a timeout.
+        Request::LoadShell { .. } => Some(LOAD_WITHIN + ANSWER_WITHIN),
         _ => Some(ANSWER_WITHIN),
     };
     let answer = ask(&socket, request, patience).map_err(|why| why.to_string())?;
@@ -1105,8 +1114,9 @@ fn answer_a_command(
                 &ControlDesktop {
                     module: &page.root.join(&page.module),
                     files,
-                    // Asked once: the client stops waiting after `ANSWER_WITHIN`,
-                    // so a retry could load a shell after it reported a failure.
+                    // Asked once: the client stops waiting after `LOAD_WITHIN`
+                    // plus `ANSWER_WITHIN`, so a retry could load a shell after
+                    // it reported a failure.
                     load: &|root, module| {
                         let page = Shell {
                             module: module.to_path_buf(),
@@ -1284,7 +1294,7 @@ fn load_the_shell(
     serve(
         page,
         serving,
-        &|page| load_shell(engine, &page.root, &page.module, ANSWER_WITHIN),
+        &|page| load_shell(engine, &page.root, &page.module, LOAD_WITHIN),
         given_up,
         &mut || std::thread::sleep(ASK_EVERY),
     )

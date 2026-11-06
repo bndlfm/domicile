@@ -441,6 +441,9 @@ Wire, one line each way:
   the same binary.
 - Each connection is one request, so there is no handshake to negotiate a
   version in.
+- The engine answers `load_shell` once the new shell ran. One that did not
+  run is refused with why, and the engine loads the shell it replaced again,
+  so `serving` stays right. The supervisor waits `LOAD_WITHIN` for this.
 
 Engine side:
 
@@ -448,6 +451,7 @@ Engine side:
 |---|---|
 | `components/domicile/browser/shell_source.{h,cc}` | which shell this process serves; seeded from the two switches, replaceable later |
 | `components/domicile/browser/command_protocol.{h,cc}` | the wire: line in, line out, with the action injected; has the tests |
+| `components/domicile/browser/shell_swap.{h,cc}` | waits for the new shell to run, and puts the old one back if it does not |
 | `chrome/browser/domicile/domicile_command_socket.{h,cc}` | the socket and the shell's window; in `//chrome` because reloading needs `GlobalBrowserCollection`, which `//components/domicile` may not depend on |
 
 Supervisor side:
