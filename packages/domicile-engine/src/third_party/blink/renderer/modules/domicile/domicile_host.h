@@ -97,6 +97,13 @@ class MODULES_EXPORT DomicileHost final
   // order `registerElements` used to be called in.
   void RouteInput();
 
+  // Tells the browser the shell's module ran, or why it did not. Called once,
+  // by DomicileShell, so a `domicile load-shell` hears it. Not the shell's to
+  // call, so not in the IDL.
+  // `serial` is the one the shell document names; see ShellSource::Serial.
+  void ReportShellRan(const String& serial);
+  void ReportShellFailed(const String& serial, const String& why);
+
   // AppInputClient:
   void AppPressed(HTMLAppElement& app, const String& app_id) override;
   void AppPointerMotion(const String& app_id,

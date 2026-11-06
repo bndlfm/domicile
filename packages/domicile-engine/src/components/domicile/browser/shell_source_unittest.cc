@@ -48,5 +48,12 @@ TEST(ShellSourceTest, TakesANewShellWholesale) {
   EXPECT_EQ(source.Module(), "desktop.js");
 }
 
+TEST(ShellSourceTest, CountsEachNewShell) {
+  ShellSource source(WithShell("/opt/domicile/shell", "shell.js"));
+  const uint64_t first = source.Serial();
+  source.Set(base::FilePath("/opt/domicile/shell"), "shell.js");
+  EXPECT_NE(source.Serial(), first);
+}
+
 }  // namespace
 }  // namespace domicile

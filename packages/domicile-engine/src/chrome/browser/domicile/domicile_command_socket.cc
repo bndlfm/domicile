@@ -39,6 +39,7 @@
 #include "components/domicile/browser/app_roots.h"
 #include "components/domicile/browser/command_protocol.h"
 #include "components/domicile/browser/shell_source.h"
+#include "components/domicile/browser/shell_swap.h"
 #include "components/domicile/browser/shell_window_wait.h"
 #include "components/domicile/browser/site_permissions.h"
 #include "components/domicile/mojom/web_view_guest.mojom.h"
@@ -144,31 +145,28 @@ void WhenTheShellWindowCanTakeIt(ShellWindowReady ready) {
                              kFirstPagePatience, std::move(ready));
 }
 
-// Serves the shell at `root`/`module` and loads it into the shell window's
-// page, or refuses when there is none.
-//
-// The source is set before the navigation because the navigation reads it.
+// How long `load_shell` waits for the new shell's page to say whether its
+// module ran, after which the shell is taken as loaded. With
+// kFirstPagePatience, under the supervisor's wait for a `load_shell` reply
+// (`LOAD_WITHIN` in domicile-launch's domicile.rs), so it hears why a shell
+// did not run.
+constexpr base::TimeDelta kShellRunsWithin = base::Seconds(5);
+
+// Loads what ShellSource serves into the shell window's page. A swap runs
+// this in the task WhenTheShellWindowHasAPage found the page in; a revert,
+// later, finds none once the window has closed, and has nothing to load.
 //
 // A renderer-initiated replacement rather than a reload: Chromium runs a
 // cross-document view transition only for that kind of navigation, and the
 // shell document's `@view-transition` crossfades the splash into the built
 // shell. Shell files are served `no-store` (ShellURLLoaderFactory), so a
 // rebuilt shell with the same URLs is read fresh.
-void LoadShellIntoAPage(const base::FilePath& root,
-                        const std::string& module,
-                        ShellLoaded loaded,
-                        bool has_a_page) {
+void LoadTheServedShell() {
   CHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  if (!has_a_page) {
-    std::move(loaded).Run(false);
+  content::WebContents* shell = FindShellContents();
+  if (shell == nullptr) {
     return;
   }
-
-  // WhenTheShellWindowHasAPage found it in this same task.
-  content::WebContents* shell = FindShellContents();
-  CHECK(shell);
-
-  ShellSource::Get().Set(root, module);
   content::RenderFrameHost* page = shell->GetPrimaryMainFrame();
   content::NavigationController::LoadURLParams params(
       shell->GetLastCommittedURL());
@@ -178,8 +176,44 @@ void LoadShellIntoAPage(const base::FilePath& root,
   params.initiator_origin = page->GetLastCommittedOrigin();
   params.source_site_instance = page->GetSiteInstance();
   shell->GetController().LoadURLWithParams(params);
-  LOG(INFO) << "domicile: now serving " << module << " out of " << root;
-  std::move(loaded).Run(true);
+  LOG(INFO) << "domicile: now serving " << ShellSource::Get().Module()
+            << " out of " << ShellSource::Get().Root();
+}
+
+// The process's shell swap, which hears from the shell's page through
+// ShellReports. See StartCommandSocket.
+ShellSwap& TheShellSwap() {
+  static base::NoDestructor<ShellSwap> swap(
+      ShellSource::Get(), base::BindRepeating(&LoadTheServedShell),
+      kShellRunsWithin);
+  return *swap;
+}
+
+// Swaps in the shell at `root`/`module`, and answers once it ran or the old
+// one is back, or refuses when there is no page to load it into.
+//
+// The source is set before the navigation because the navigation reads it.
+void LoadShellIntoAPage(const base::FilePath& root,
+                        const std::string& module,
+                        ShellLoaded loaded,
+                        bool has_a_page) {
+  CHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  if (!has_a_page) {
+    std::move(loaded).Run(base::unexpected(kNoShellWindow));
+    return;
+  }
+  TheShellSwap().Swap(
+      root, module,
+      base::BindOnce(
+          [](ShellLoaded loaded, const ShellOutcome& ran) {
+            if (ran.has_value()) {
+              LOG(ERROR) << "domicile: " << *ran;
+              std::move(loaded).Run(base::unexpected(*ran));
+            } else {
+              std::move(loaded).Run(base::ok());
+            }
+          },
+          std::move(loaded)));
 }
 
 // Serves the shell at `root`/`module` and loads it into the shell window, once
@@ -674,6 +708,15 @@ void StartCommandSocket() {
   if (!command_line.HasSwitch(kDomicileCommandSocketSwitch)) {
     return;
   }
+
+  // What the shell's page says of its module reaches the swap waiting on it.
+  // Heard on the IO thread, where its control channel is read.
+  ShellReports::Get().Listen(base::BindPostTask(
+      content::GetUIThreadTaskRunner({}),
+      base::BindRepeating(
+          [](const std::string& serial, const ShellOutcome& ran) {
+            TheShellSwap().Heard(serial, ran);
+          })));
 
   // A net socket needs an IO message pump; the IO thread has one, and the
   // traffic is too light for a dedicated thread.

@@ -41,7 +41,9 @@ The engine has two channels to the rest of Domicile:
   `displays`, `keymap`, `extensions`, `force_dark`, `tray`, `notifications`, `shell_config`,
   `idle`, `locked`, `system`, `portal_requests`.
 - **Handled in the browser, never sent to the compositor:** `grab_shortcut`,
-  `ungrab_shortcut`, `warp_pointer`.
+  `ungrab_shortcut`, `warp_pointer`, and `ShellRan`/`ShellFailed`, which
+  `DomicileShell` sends once the shell's module ran or did not, for
+  `load_shell` (below).
 - **Not from the compositor:** `browserwindowschanged`, the desk's browser
   windows, which the browser owns
   (`components/domicile/mojom/browser_windows.mojom`),
@@ -277,6 +279,12 @@ The supervisor connects, sends one JSON line, reads one reply, and closes.
   supervisor's 5-second wait for a reply. The supervisor asks again on
   `load_shell`'s refusal, "this engine has no shell window to load a shell
   into".
+- `load_shell` answers once the new shell's page says whether its module ran,
+  or after 5 seconds of silence, taken as loaded. A shell that did not run is
+  refused with the page's reason, and the engine serves and loads the shell
+  it replaced again. The same shell loaded again, as a module rebuilt in
+  place, has nothing to go back to and stays on its error screen. See
+  `components/domicile/browser/shell_swap.h`.
 - `domicile load-shell <path>` sends `load_shell`. `domicile open <url>`
   sends `open_url`, and `domicile open --app <url>` sends it with `"app":true`.
   `domicile screenshot <file>` goes to the compositor.
@@ -362,6 +370,7 @@ The supervisor connects, sends one JSON line, reads one reply, and closes.
 | `components/domicile/browser/command_protocol.{h,cc}` | parses a line and returns a reply; unit tested |
 | `chrome/browser/domicile/domicile_command_socket.{h,cc}` | the socket and the shell's window; in `//chrome` because reloading needs `GlobalBrowserCollection` |
 | `components/domicile/browser/shell_source.{h,cc}` | the shell being served; set from the two switches, replaced by `load_shell` |
+| `components/domicile/browser/shell_swap.{h,cc}` | waits for the new shell to run, and puts the old one back if it does not; unit tested |
 | `components/domicile/browser/shell_window_wait.{h,cc}` | holds `load_shell`, `run_app` and `open_url` until the shell window's first page commits; unit tested |
 | `chrome/browser/domicile/domicile_browser_windows.{h,cc}` | the desk's browser windows; `open_url` opens one |
 | `chrome/browser/domicile/domicile_cast_sinks.{h,cc}` | the TVs to cast the desktop to, and the casts; see `docs/CASTING-TO-TVS.md` |

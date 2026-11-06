@@ -15,12 +15,14 @@
 #include "base/functional/callback_helpers.h"
 #include "base/json/json_reader.h"
 #include "base/memory/scoped_refptr.h"
+#include "base/no_destructor.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/test/task_environment.h"
 #include "base/test/test_future.h"
 #include "components/domicile/browser/line_framer.h"
+#include "components/domicile/browser/shell_swap.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -536,6 +538,36 @@ TEST_F(ControlChannelTest, APageLineWithNoCompositorUpReachesTheNextOne) {
   AcceptTheNextCompositor();
 
   EXPECT_EQ(Heard(), R"({"protocol_version":1,"type":"hello"})");
+  EXPECT_EQ(Heard(), R"({"type":"focus_chrome"})");
+}
+
+// Whether the shell's module ran goes to the `load_shell` waiting on it, and
+// never to the compositor.
+TEST_F(ControlChannelTest, WhetherTheShellRanReachesTheBrowserOnly) {
+  // The process-wide reports keep their listeners for good, so this one's
+  // record does too, and they listen once however often this runs.
+  static base::NoDestructor<std::vector<ShellOutcome>> heard;
+  [[maybe_unused]] static const bool listening = [] {
+    ShellReports::Get().Listen(base::BindRepeating(
+        [](const std::string& serial, const ShellOutcome& ran) {
+          EXPECT_EQ(serial, "7");
+          heard->push_back(ran);
+        }));
+    return true;
+  }();
+  heard->clear();
+  control_->SetClient(client_.BindRemote());
+  control_.FlushForTesting();
+  EXPECT_EQ(Heard(), R"({"protocol_version":1,"type":"hello"})");
+
+  control_->ShellFailed("7", "the shell's Shell threw: TypeError");
+  control_->ShellRan("7");
+  control_->FocusChrome();
+  control_.FlushForTesting();
+
+  EXPECT_EQ(*heard,
+            (std::vector<ShellOutcome>{"the shell's Shell threw: TypeError",
+                                       std::nullopt}));
   EXPECT_EQ(Heard(), R"({"type":"focus_chrome"})");
 }
 
