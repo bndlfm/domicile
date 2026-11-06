@@ -28,7 +28,8 @@ class MODULES_EXPORT DomicileNotification final : public ScriptWrappable {
                        HeapVector<Member<DomicileNotificationAction>> actions,
                        bool clickable,
                        int32_t timeout_ms,
-                       double time);
+                       double time,
+                       const String& browser_window);
   ~DomicileNotification() override;
 
   uint32_t id() const { return id_; }
@@ -43,6 +44,7 @@ class MODULES_EXPORT DomicileNotification final : public ScriptWrappable {
   bool clickable() const { return clickable_; }
   int32_t timeoutMs() const { return timeout_ms_; }
   double time() const { return time_; }
+  const String& browserWindow() const { return browser_window_; }
 
   void Trace(Visitor*) const override;
 
@@ -59,6 +61,8 @@ class MODULES_EXPORT DomicileNotification final : public ScriptWrappable {
   bool clickable_;
   int32_t timeout_ms_;
   double time_;
+  // Empty for a notification no browser window's page sent.
+  String browser_window_;
 };
 
 }  // namespace blink

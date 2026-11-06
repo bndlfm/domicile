@@ -28,10 +28,6 @@ describe(gmailInbox, () => {
     expect(inbox().notifiesAs).toBe("Work");
   });
 
-  it("replaces the notifications Gmail's page sends", () => {
-    expect(inbox().replaces).toBe("mail.google.com");
-  });
-
   it("reads signed out before the account signs in", async () => {
     const watch = inbox().read(new FakeDomicileHost().domicile);
 
@@ -86,6 +82,8 @@ describe(gmailInbox, () => {
     expect(inbox().account).toBe(EMAIL);
     expect(inbox().app).toEqual({
       appId: "gmail:me@example.com",
+      // Gmail's page notifies the mail the inbox notifies.
+      pageNotifies: true,
       url: "https://mail.google.com/mail/?authuser=me%40example.com",
     });
     expect(

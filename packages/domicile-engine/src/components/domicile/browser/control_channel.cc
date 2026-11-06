@@ -1342,9 +1342,11 @@ void ControlChannel::DispatchLine(const std::string& line,
       }
       // A notification with no id is one nothing could clear, and one missing
       // what it says or when is one nothing could draw: dropped, as a tray
-      // icon missing its id or title is. The picture and the timeout are
-      // optional -- the compositor leaves out a picture it could not draw, and
-      // a timeout left to the shell -- and are carried as empty and -1.
+      // icon missing its id or title is. The picture, the timeout and the
+      // browser window are optional -- the compositor leaves out a picture it
+      // could not draw, a timeout left to the shell, and the window of
+      // anything no browser window's page sent -- and are carried as empty,
+      // -1 and empty.
       std::optional<int> id = item->FindInt("id");
       const std::string* app_name = item->FindString("app_name");
       const std::string* summary = item->FindString("summary");
@@ -1371,12 +1373,13 @@ void ControlChannel::DispatchLine(const std::string& line,
       // Read as a double: the timeout is a u32 on the wire, and one past two
       // billion milliseconds is a month, which is as good as never.
       std::optional<double> timeout_ms = item->FindDouble("timeout_ms");
+      const std::string* browser_window = item->FindString("browser_window");
       items.push_back(mojom::Notification::New(
           static_cast<uint32_t>(*id), *app_name, *summary, *body,
           icon ? *icon : std::string(), *urgency, std::move(actions),
           *clickable,
           timeout_ms ? static_cast<int32_t>(std::min(*timeout_ms, 2.0e9)) : -1,
-          *time));
+          *time, browser_window ? *browser_window : std::string()));
     }
     // Sent even when it is empty, for `clipboard`'s reason.
     client_->Notifications(std::move(items));

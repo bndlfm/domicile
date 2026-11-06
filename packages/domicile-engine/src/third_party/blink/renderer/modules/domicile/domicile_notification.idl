@@ -46,4 +46,8 @@
   // When it arrived or was last replaced, in milliseconds since the epoch on
   // the compositor's clock.
   readonly attribute double time;
+
+  // The id of the browser window whose page sent it, as
+  // DomicileBrowserWindow.id names it, or empty for anything else.
+  readonly attribute DOMString browserWindow;
 };

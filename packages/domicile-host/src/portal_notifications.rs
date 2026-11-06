@@ -298,6 +298,7 @@ mod tests {
                 clickable: false,
                 timeout_ms: None,
                 time: 10,
+                browser_window: None,
             }]
         );
         assert!(portal.owns(shown));

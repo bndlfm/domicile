@@ -37,6 +37,7 @@
 #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"
 #include "chrome/browser/ui/browser_window/public/global_browser_collection.h"
 #include "components/domicile/browser/browser_window_capture_target.h"
+#include "components/domicile/browser/notification_window.h"
 #include "components/domicile/browser/private_pages.h"
 #include "components/domicile/browser/web_view_guest.h"
 #include "components/domicile/browser/web_view_partition.h"
@@ -47,6 +48,7 @@
 #include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
+#include "content/public/browser/notification_event_dispatcher.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
@@ -278,6 +280,14 @@ class DeskWindows final : public base::SupportsUserData::Data,
   WebViewGuest* Find(const std::string& id) {
     auto found = std::ranges::find(windows_, id, &Window::id);
     return found == windows_.end() ? nullptr : found->guest.get();
+  }
+
+  // The id of the window showing `page`, or empty when none does.
+  std::string IdOf(const content::WebContents& page) const {
+    auto found = std::ranges::find_if(windows_, [&page](const Window& window) {
+      return &window.guest->contents() == &page;
+    });
+    return found == windows_.end() ? std::string() : found->id;
   }
 
   // The whole list, as sent to the shell.
@@ -685,12 +695,30 @@ std::optional<BrowserWindowCaptureTarget> CaptureTargetOf(
   return target;
 }
 
+// The id of the browser window whose page showed non-persistent notification
+// `notification_id`, for Chrome's notification bridge to tell the desktop.
+// Empty when there is no shell, or no browser window's page showed it: the
+// shell's own, or one from a page already gone.
+std::string NotificationWindowOf(const std::string& notification_id) {
+  content::WebContents* page =
+      content::NotificationEventDispatcher::GetInstance()
+          ->GetNonPersistentNotificationWebContents(notification_id);
+  content::WebContents* shell = ShellContentsIn(nullptr);
+  if (page == nullptr || shell == nullptr) {
+    return std::string();
+  }
+  return DeskWindows::For(
+             Profile::FromBrowserContext(shell->GetBrowserContext()))
+      .IdOf(*page);
+}
+
 }  // namespace
 
 void StartBrowserWindows() {
   static base::NoDestructor<Host> host;
   WebViewGuest::SetBrowserWindowHost(host.get());
   SetBrowserWindowCaptureTargetFinder(base::BindRepeating(&CaptureTargetOf));
+  SetNotificationWindowFinder(base::BindRepeating(&NotificationWindowOf));
 }
 
 bool OpenBrowserWindow(const GURL& url) {

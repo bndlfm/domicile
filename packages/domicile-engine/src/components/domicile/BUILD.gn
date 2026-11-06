@@ -100,6 +100,18 @@ source_set("browser_window_capture_target") {
   ]
 }
 
+# Which browser window a page's notification came from. A target of its own
+# for :browser_window_capture_target's reason: the windows are //chrome's,
+# which sets the finder, and Chrome's notification bridge asks it.
+source_set("notification_window") {
+  sources = [
+    "browser/notification_window.cc",
+    "browser/notification_window.h",
+  ]
+
+  public_deps = [ "//base" ]
+}
+
 # The scheme's name, its one host, and the switch that points at the shell.
 #
 # Header-only and dependency-free on purpose. chrome/common needs it to register
@@ -1062,6 +1074,7 @@ source_set("unit_tests") {
     "browser/frame_sink_broker_unittest.cc",
     "browser/guest_dialogs_unittest.cc",
     "browser/line_framer_unittest.cc",
+    "browser/notification_window_unittest.cc",
     "browser/page_matches_unittest.cc",
     "browser/placeholder_stage_unittest.cc",
     "browser/pointer_warp_unittest.cc",
@@ -1137,6 +1150,7 @@ source_set("unit_tests") {
     ":held_chords",
     ":keyboard_layout",
     ":line_framer",
+    ":notification_window",
     ":page_matches",
     ":placeholder_stage",
     ":pointer_warp",

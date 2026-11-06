@@ -398,6 +398,7 @@ fn the_notifications_ride_with_the_handshake() {
         clickable: false,
         timeout_ms: None,
         time: 1,
+        browser_window: None,
     };
     session.host_mut().set_tray(vec![]);
     let told = session

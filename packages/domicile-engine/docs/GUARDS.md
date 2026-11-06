@@ -82,6 +82,7 @@ Headless.
 | `guard-shell-local-network.sh` | the shell loads an image from loopback with no Local Network Access prompt (patch 0066) |
 | `guard-shell-web-apis.sh` | the shell may show notifications and read cross-origin responses (patches 0066, 0105) |
 | `guard-notification-server-late.sh` | the browser connects to a notification server that takes its name after the browser looked, on a private bus (patch 0134) |
+| `guard-notification-window.sh` | a page's notification names its browser window in `x-domicile-browser-window`, and the shell's names none, on a private bus with a stand-in server (patch 0172) |
 | `guard-shell-script-src.sh` | an injected inline `<script>` and `onerror` do not run in the shell; a `<script src>` from the shell root does |
 | `guard-domicile-fetch.sh` | the shell `fetch()`es a file beside it and one from `domicile://home/` (patch 0126); a site in its `<webview>` reads neither with `fetch()`, a no-cors `fetch()` or `XMLHttpRequest` |
 | `guard-shell-pdf.sh` | Chrome's PDF viewer starts on a PDF from `domicile://home/` in the shell's `<iframe>`, as the launcher's preview shows one (patch 0154) |

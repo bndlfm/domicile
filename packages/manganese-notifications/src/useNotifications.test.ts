@@ -18,6 +18,7 @@ const client = () => {
         fake.set({
           notifications: items.map((item) => ({
             ...item,
+            browserWindow: item.browserWindow ?? "",
             icon: item.icon ?? "",
             timeoutMs: item.timeoutMs ?? -1,
           })),
@@ -158,20 +159,23 @@ describe("useNotifications", () => {
     });
   });
 
-  describe("a replaced sender's", () => {
+  describe("a page in a replaced window's", () => {
     it("is cleared as it arrives, without a toast", () => {
-      const { host, result, shown } = mounted([], ["mail.google.com"]);
+      const { host, result, shown } = mounted([], ["7"]);
       host.says([]);
 
       host.says([
-        notification({ appName: "mail.google.com", id: 7, time: 1 }),
-        notification({ appName: "Work", id: 8, time: 2 }),
+        notification({ appName: "mail.google.com", browserWindow: "7", id: 7 }),
+        notification({ appName: "mail.google.com", browserWindow: "8", id: 8 }),
+        notification({ appName: "Work", id: 9 }),
       ]);
 
       expect(host.asked).toEqual([["dismissNotifications", [7]]]);
-      expect(shown.added).toEqual([expect.objectContaining({ id: "8" })]);
-      expect(result.current.items.map(({ id }) => id)).toEqual([8]);
-      expect(result.current.unread).toBe(1);
+      expect(shown.added.map((toast) => (toast as { id: string }).id)).toEqual([
+        "8",
+        "9",
+      ]);
+      expect(result.current.items.map(({ id }) => id)).toEqual([9, 8]);
     });
   });
 

@@ -646,6 +646,8 @@ fn hints(mut sent: HashMap<String, OwnedValue>) -> Hints {
         .unwrap_or(false);
     let origin_name = first(&["x-kde-origin-name"]).and_then(|value| String::try_from(value).ok());
     let desktop_entry = first(&["desktop-entry"]).and_then(|value| String::try_from(value).ok());
+    let browser_window =
+        first(&["x-domicile-browser-window"]).and_then(|value| String::try_from(value).ok());
     Hints {
         urgency,
         image_data,
@@ -653,6 +655,7 @@ fn hints(mut sent: HashMap<String, OwnedValue>) -> Hints {
         resident,
         origin_name,
         desktop_entry,
+        browser_window,
     }
 }
 
@@ -1232,6 +1235,7 @@ mod tests {
             ("resident", Value::from(true)),
             ("x-kde-origin-name", Value::from("chat.example.com")),
             ("desktop-entry", Value::from("firefox")),
+            ("x-domicile-browser-window", Value::from("7")),
         ]));
 
         assert_eq!(
@@ -1243,6 +1247,7 @@ mod tests {
                 resident: true,
                 origin_name: Some("chat.example.com".into()),
                 desktop_entry: Some("firefox".into()),
+                browser_window: Some("7".into()),
             }
         );
     }

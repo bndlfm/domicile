@@ -980,6 +980,11 @@ export type DomicileNotification = {
    * the compositor's clock.
    */
   readonly time: number;
+  /**
+   * The id of the browser window whose page sent it, as
+   * DomicileBrowserWindow.id names it, or empty for anything else.
+   */
+  readonly browserWindow: string;
 };
 
 /**
