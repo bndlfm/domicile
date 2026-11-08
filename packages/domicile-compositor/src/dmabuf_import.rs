@@ -9,7 +9,7 @@
 use smithay::backend::allocator::dmabuf::Dmabuf;
 use smithay::backend::allocator::format::FormatSet;
 use smithay::backend::allocator::Format;
-use smithay::backend::egl::native::{EGLNativeDisplay, EGLPlatform};
+use smithay::backend::egl::native::{EGLNativeDisplay, EGLPlatform, EGLSurfacelessDisplay};
 use smithay::backend::egl::{ffi, EGLContext, EGLDevice, EGLDisplay};
 use smithay::backend::renderer::gles::GlesRenderer;
 use smithay::backend::renderer::ImportDma as _;
@@ -76,10 +76,21 @@ pub fn headless_renderer() -> Result<(GlesRenderer, DmabufImporter), ImportError
         // `EGL_EXT_device_enumeration`.
         Err(err) => {
             tracing::debug!(%err, "EGL cannot list devices; trying GBM on each render node");
-            let (display, node) = gbm_display(Path::new("/dev/dri"))?;
-            let main_device = device_number(&node);
-            tracing::debug!(device = ?node, main_device, "dmabuf import device");
-            (display, Some(node), main_device)
+            match gbm_display(Path::new("/dev/dri")) {
+                Ok((display, node)) => {
+                    let main_device = device_number(&node);
+                    tracing::debug!(device = ?node, main_device, "dmabuf import device");
+                    (display, Some(node), main_device)
+                }
+                Err(err) => {
+                    tracing::debug!(%err, "GBM is unavailable; trying surfaceless EGL");
+                    // A surfaceless display keeps the software renderer alive
+                    // when the only DRM node is not a GPU. It has no DRM node
+                    // of its own; the engine can then switch to memory frames.
+                    let display = unsafe { EGLDisplay::new(EGLSurfacelessDisplay) }?;
+                    (display, None, None)
+                }
+            }
         }
     };
     let context = EGLContext::new(&display)?;
