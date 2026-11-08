@@ -879,6 +879,9 @@
 
       # No `default`: the flake cannot choose a desktop for you.
       packages.${system} = desktops // {
+        # The raw shell module for Home Manager configurations that use the
+        # compositor package separately from the bundled desktop wrapper.
+        manganese-shell = shellPage "manganese";
         # Domicile alone, for users with their own shell.
         domicile = domicilePackage;
         # The engine alone, for setting `DOMICILE_ENGINE` yourself.
